@@ -1,8 +1,6 @@
 __pycache__/
 *.pyc
-edge_workspace_links.csv
-edge_workspace_links.json
-edge_workspace_links.tsv
+edge_workspace_links.xlsx
 build/
 dist/
 *.spec

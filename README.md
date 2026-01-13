@@ -14,7 +14,7 @@ https://github.com/TsoliasPN/edge-workspaces-url-extractor/releases/latest
 
 1. Copy `edge-workspace-links.exe` into the folder with your `.edge` files.
 2. Double-click `edge-workspace-links.exe`.
-3. The tool writes `edge_workspace_links.csv` in the same folder.
+3. The tool writes `edge_workspace_links.xlsx` in the same folder.
 
 > No terminal needed. Just double-click.
 
@@ -35,16 +35,10 @@ Run against a single workspace file:
 edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces\Advanced Reporting.edge"
 ```
 
-Write JSON to stdout:
+Write the Excel output to a custom path:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --format json --output -
-```
-
-Write TSV to a custom output file:
-
-```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --format tsv --output "C:\Temp\edge_workspace_links.tsv"
+edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --output "C:\Temp\edge_workspace_links.xlsx"
 ```
 
 Exclude internal browser schemes:
@@ -72,8 +66,7 @@ Default input path:
 
 Common options:
 
-- `--format csv|json|tsv`
-- `--output PATH` (use `-` for stdout)
+- `--output PATH` (output `.xlsx` file path)
 - `--exclude-internal`
 - `--exclude-schemes edge chrome file`
 - `--sort`
@@ -83,7 +76,13 @@ Common options:
 Python requirements:
 
 - Python 3.8+
-- No third-party dependencies
+- `openpyxl`
+
+Install the dependency:
+
+```bash
+pip install openpyxl
+```
 
 Use the same examples as above, but replace `edge-workspace-links.exe` with:
 
@@ -93,13 +92,11 @@ python edge_workspace_links.py
 
 ## Output
 
-Default output is `edge_workspace_links.csv` in the input directory with:
+Default output is `edge_workspace_links.xlsx` in the input directory with three sheets:
 
-- `workspace_file`
-- `url`
-- `title`
-
-Use `--format json` or `--format tsv` to change the output format.
+- `Links`: `workspace_file`, `url`, `title`
+- `Summary Report`: `metric`, `value` (`files_found`, `files_with_urls`, `files_without_urls`, `total_urls`, `unique_urls`)
+- `Per File Report`: `workspace_file`, `url_count`
 
 ## Notes and limitations
 

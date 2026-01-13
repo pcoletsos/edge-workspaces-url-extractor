@@ -6,13 +6,17 @@ Extract tab URLs from Microsoft Edge Workspace .edge files.
 from __future__ import annotations
 
 import argparse
-import csv
 import hashlib
 import json
 import sys
 import zlib
 from pathlib import Path
 from typing import Any, Iterable
+
+try:
+    from openpyxl import Workbook
+except ImportError:
+    Workbook = None
 
 
 GZIP_MAGIC = b"\x1f\x8b"
@@ -128,37 +132,44 @@ def filter_links(
     return filtered
 
 
-def resolve_output_path(input_path: Path, fmt: str, output: str | None) -> str:
+def resolve_output_path(input_path: Path, output: str | None) -> str:
     if output:
         return output
     base_dir = input_path if input_path.is_dir() else input_path.parent
-    return str(base_dir / f"edge_workspace_links.{fmt}")
+    return str(base_dir / "edge_workspace_links.xlsx")
 
 
 def write_output(
-    rows: list[dict[str, str]], fmt: str, output_path: str
+    rows: list[dict[str, str]],
+    summary_rows: list[tuple[str, int]],
+    file_rows: list[dict[str, str | int]],
+    output_path: str,
 ) -> None:
-    if output_path == "-":
-        out_file = sys.stdout
-        close_file = False
-    else:
-        out_file = open(output_path, "w", newline="", encoding="utf-8")
-        close_file = True
+    workbook = Workbook()
 
-    try:
-        if fmt in {"csv", "tsv"}:
-            delimiter = "," if fmt == "csv" else "\t"
-            writer = csv.DictWriter(
-                out_file, fieldnames=["workspace_file", "url", "title"], delimiter=delimiter
-            )
-            writer.writeheader()
-            writer.writerows(rows)
-        else:
-            json.dump(rows, out_file, indent=2)
-            out_file.write("\n")
-    finally:
-        if close_file:
-            out_file.close()
+    links_sheet = workbook.active
+    links_sheet.title = "Links"
+    links_sheet.append(["workspace_file", "url", "title"])
+    for row in rows:
+        links_sheet.append([row["workspace_file"], row["url"], row["title"]])
+
+    summary_sheet = workbook.create_sheet("Summary Report")
+    summary_sheet.append(["metric", "value"])
+    for metric, value in summary_rows:
+        summary_sheet.append([metric, value])
+
+    per_file_sheet = workbook.create_sheet("Per File Report")
+    per_file_sheet.append(["workspace_file", "url_count"])
+    for row in file_rows:
+        per_file_sheet.append([row["workspace_file"], row["url_count"]])
+
+    for sheet in (links_sheet, summary_sheet, per_file_sheet):
+        for column_cells in sheet.columns:
+            column_letter = column_cells[0].column_letter
+            max_len = max(len(str(cell.value)) if cell.value is not None else 0 for cell in column_cells)
+            sheet.column_dimensions[column_letter].width = min(max_len + 2, 80)
+
+    workbook.save(output_path)
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -178,14 +189,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "-o",
         "--output",
         default=None,
-        help="Output file path. Use '-' to write to stdout.",
-    )
-    parser.add_argument(
-        "-f",
-        "--format",
-        choices=["csv", "json", "tsv"],
-        default="csv",
-        help="Output format.",
+        help="Output .xlsx file path.",
     )
     parser.add_argument(
         "--exclude-schemes",
@@ -207,6 +211,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str]) -> int:
+    if Workbook is None:
+        print(
+            "Missing dependency 'openpyxl'. Install with: pip install openpyxl",
+            file=sys.stderr,
+        )
+        return 2
+
     args = parse_args(argv)
     input_path = Path(args.input).expanduser()
 
@@ -225,13 +236,16 @@ def main(argv: list[str]) -> int:
         exclude_schemes.update(INTERNAL_SCHEMES)
 
     rows: list[dict[str, str]] = []
+    per_file_rows: list[dict[str, str | int]] = []
     for path in edge_files:
         data = path.read_bytes()
         payloads = decompress_payloads(data)
         if not payloads:
+            per_file_rows.append({"workspace_file": path.name, "url_count": 0})
             continue
         links = extract_links_from_payloads(payloads)
         links = filter_links(links, exclude_schemes)
+        per_file_rows.append({"workspace_file": path.name, "url_count": len(links)})
         for link in links:
             rows.append(
                 {
@@ -244,12 +258,26 @@ def main(argv: list[str]) -> int:
     if args.sort:
         rows.sort(key=lambda row: (row["workspace_file"], row["url"], row["title"]))
 
-    output_path = resolve_output_path(input_path, args.format, args.output)
-    write_output(rows, args.format, output_path)
+    if args.sort:
+        per_file_rows.sort(key=lambda row: row["workspace_file"])
 
-    target = "stdout" if output_path == "-" else output_path
+    total_files = len(edge_files)
+    files_with_urls = sum(1 for row in per_file_rows if row["url_count"] > 0)
+    total_urls = len(rows)
+    unique_urls = len({row["url"] for row in rows})
+    summary_rows = [
+        ("files_found", total_files),
+        ("files_with_urls", files_with_urls),
+        ("files_without_urls", total_files - files_with_urls),
+        ("total_urls", total_urls),
+        ("unique_urls", unique_urls),
+    ]
+
+    output_path = resolve_output_path(input_path, args.output)
+    write_output(rows, summary_rows, per_file_rows, output_path)
+
     print(
-        f"Wrote {len(rows)} links from {len(edge_files)} workspace file(s) to {target}",
+        f"Wrote {len(rows)} links from {len(edge_files)} workspace file(s) to {output_path}",
         file=sys.stderr,
     )
     return 0
