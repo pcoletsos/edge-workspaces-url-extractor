@@ -1,11 +1,13 @@
 # Edge Workspaces URL Extractor
 
-Extract tab URLs from Microsoft Edge Workspace `.edge` files.
+Extract open tab URLs and workspace favorites from Microsoft Edge Workspace `.edge` files.
 All processing happens locally.
 
 The `.edge` workspace files store compressed JSON deltas (gzip). This script
-scans for gzip members, decompresses them, parses the JSON, and extracts tab
-nodes (`nodeType == 1`) with a `url` field.
+scans for gzip members, decompresses them, parses the JSON, and extracts:
+
+- Open tabs (current URL + title per tab)
+- Workspace favorites/bookmarks
 
 ## Quick start (Windows, no Python required)
 
@@ -47,6 +49,18 @@ Exclude internal browser schemes:
 edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --exclude-internal
 ```
 
+Export only open tabs:
+
+```bash
+edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --mode tabs
+```
+
+Export only favorites/bookmarks:
+
+```bash
+edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --mode favorites
+```
+
 Exclude specific schemes:
 
 ```bash
@@ -69,6 +83,7 @@ Common options:
 - `--output PATH` (output `.xlsx` file path)
 - `--exclude-internal`
 - `--exclude-schemes edge chrome file`
+- `--mode both|tabs|favorites` (default: `both`)
 - `--sort`
 
 ## Python usage (optional)
@@ -94,15 +109,17 @@ python edge_workspace_links.py
 
 Default output is `edge_workspace_links.xlsx` in the input directory with three sheets:
 
-- `Links`: `workspace_file`, `url`, `title`
-- `Summary Report`: `metric`, `value` (`files_found`, `files_with_urls`, `files_without_urls`, `total_urls`, `unique_urls`)
-- `Per File Report`: `workspace_file`, `url_count`
+- `Links`: `workspace_file`, `source`, `url`, `title` (`source` is `tab` or `favorite`)
+- `Summary Report`: `metric`, `value` (includes totals for tabs, favorites, and overall unique URLs)
+- `Per File Report`: `workspace_file`, `open_tab_count`, `favorite_count`, `links_written`
 
 ## Notes and limitations
 
-- This extracts tab URLs (nodeType 1) and titles only.
+- This exports both open tabs and workspace favorites by default.
+- De-duplication rules (per workspace file):
+  - If a URL exists as both a tab and a favorite, only the favorite is kept.
+  - If a URL exists on multiple tabs, it is written once.
 - Workspace share links are not stored as a simple URL in these files.
-- Entries are de-duplicated per workspace by `(url, title)`.
 
 ## Build an executable (developers)
 
