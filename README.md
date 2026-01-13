@@ -23,6 +23,13 @@ https://github.com/TsoliasPN/edge-workspaces-url-extractor/releases/latest
 The executable defaults to the folder it is in. Use `--input` to point to a
 different file or folder.
 
+Executable defaults (when double-clicking):
+
+- Input: the folder containing `edge-workspace-links.exe`
+- Output: `edge_workspace_links.xlsx` in the input folder
+- Mode: `both` (exports open tabs + favorites)
+- Filters: none (unless you pass `--exclude-internal` / `--exclude-schemes`)
+
 ## Command-line examples (Windows exe)
 
 Run against a directory containing `.edge` files:
