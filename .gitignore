@@ -3,3 +3,6 @@ __pycache__/
 edge_workspace_links.csv
 edge_workspace_links.json
 edge_workspace_links.tsv
+build/
+dist/
+*.spec

@@ -8,33 +8,39 @@ nodes (`nodeType == 1`) with a `url` field.
 
 ## Requirements
 
-- Python 3.8+
-- No third-party dependencies
+- Windows executable: none
+- Python script: Python 3.8+ with no third-party dependencies
 
 ## Usage
 
-Run against a directory containing `.edge` files:
+Standalone Windows executable (no Python needed):
+
+1. Copy `edge-workspace-links.exe` into the folder with your `.edge` files.
+2. Double-click `edge-workspace-links.exe`.
+3. The tool writes `edge_workspace_links.csv` in the same folder.
+
+Run against a directory containing `.edge` files (Python):
 
 ```bash
-python edge_workspace_links.py --input "F:\OneDrive - Vodafone Group\Apps\Microsoft Edge\Edge Workspaces"
+python edge_workspace_links.py --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces"
 ```
 
 Run against a single workspace file:
 
 ```bash
-python edge_workspace_links.py --input "F:\OneDrive - Vodafone Group\Apps\Microsoft Edge\Edge Workspaces\Advanced Reporting.edge"
+python edge_workspace_links.py --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces\Advanced Reporting.edge"
 ```
 
 Write JSON to stdout:
 
 ```bash
-python edge_workspace_links.py --input "F:\OneDrive - Vodafone Group\Apps\Microsoft Edge\Edge Workspaces" --format json --output -
+python edge_workspace_links.py --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --format json --output -
 ```
 
 Exclude internal browser schemes:
 
 ```bash
-python edge_workspace_links.py --input "F:\OneDrive - Vodafone Group\Apps\Microsoft Edge\Edge Workspaces" --exclude-internal
+python edge_workspace_links.py --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --exclude-internal
 ```
 
 ## Output

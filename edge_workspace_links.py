@@ -19,6 +19,12 @@ GZIP_MAGIC = b"\x1f\x8b"
 INTERNAL_SCHEMES = {"about", "chrome", "edge", "file", "microsoft-edge"}
 
 
+def default_input_path() -> str:
+    if getattr(sys, "frozen", False):
+        return str(Path(sys.executable).resolve().parent)
+    return "."
+
+
 def iter_gzip_offsets(data: bytes) -> Iterable[int]:
     start = 0
     while True:
@@ -162,8 +168,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "-i",
         "--input",
-        default=".",
-        help="Path to a .edge file or a directory containing .edge files.",
+        default=default_input_path(),
+        help=(
+            "Path to a .edge file or a directory containing .edge files. "
+            "Defaults to the script/exe location."
+        ),
     )
     parser.add_argument(
         "-o",
