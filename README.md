@@ -18,7 +18,7 @@ https://github.com/TsoliasPN/edge-workspaces-url-extractor/releases/latest
 2. Double-click `edge-workspace-links.exe`.
 3. The tool writes `edge_workspace_links.xlsx` in the same folder.
 
-> No terminal needed. Just double-click.
+> Double-click still works. The packaged executable keeps a console window so warnings and file statuses stay visible.
 
 The executable defaults to the folder it is in. Use `--input` to point to a
 different file or folder.
@@ -48,6 +48,18 @@ Write the Excel output to a custom path:
 
 ```bash
 edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --output "C:\Temp\edge_workspace_links.xlsx"
+```
+
+Write machine-readable JSON instead of Excel:
+
+```bash
+edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --format json --output "C:\Temp\edge_workspace_links.json"
+```
+
+Write CSV tables for automation workflows:
+
+```bash
+edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --format csv --output "C:\Temp\edge_workspace_links"
 ```
 
 Exclude internal browser schemes:
@@ -87,7 +99,8 @@ Default input path:
 
 Common options:
 
-- `--output PATH` (output `.xlsx` file path)
+- `--output PATH` (`.xlsx` / `.json` file path, or CSV base name)
+- `--format xlsx|csv|json` (default: `xlsx`)
 - `--exclude-internal`
 - `--exclude-schemes edge chrome file`
 - `--mode both|tabs|favorites` (default: `both`)
@@ -113,26 +126,6 @@ pip install -e .[dev]
 pytest
 ```
 
-## Benchmarking
-
-Run a repeatable synthetic parser benchmark:
-
-```bash
-python scripts/benchmark_extraction.py --runs 5
-```
-
-Stress nested JSON traversal more heavily:
-
-```bash
-python scripts/benchmark_extraction.py --runs 5 --nested-json-layers 3
-```
-
-Benchmark a local real-world file or directory without committing it:
-
-```bash
-python scripts/benchmark_extraction.py --input "C:\Path\To\Edge Workspaces"
-```
-
 Use the same examples as above, but replace `edge-workspace-links.exe` with:
 
 ```bash
@@ -146,6 +139,11 @@ Default output is `edge_workspace_links.xlsx` in the input directory with three 
 - `Links`: `workspace_file`, `source`, `url`, `title` (`source` is `tab` or `favorite`)
 - `Summary Report`: `metric`, `value` (includes extracted totals, exported totals, and file status counters)
 - `Per File Report`: `workspace_file`, `status`, `detail`, `extracted_tab_count`, `extracted_favorite_count`, `exported_link_count`
+
+Alternative formats:
+
+- `--format json` writes one JSON document with `links`, `summary`, and `files` sections.
+- `--format csv` writes three sibling files: `_links.csv`, `_summary.csv`, and `_files.csv`.
 
 Workbook safety and reporting behavior:
 
@@ -166,10 +164,11 @@ Workbook safety and reporting behavior:
 ## Build an executable (developers)
 
 ```bash
-py -3 -m PyInstaller --onefile --name edge-workspace-links edge_workspace_links.py
+py -3 -m PyInstaller edge-workspace-links.spec
 ```
 
 The executable is written to `dist\edge-workspace-links.exe`.
+The tracked spec keeps `console=True` so normal double-click runs still surface warnings and file statuses.
 
 Benchmark extraction performance on a local workspace corpus:
 
