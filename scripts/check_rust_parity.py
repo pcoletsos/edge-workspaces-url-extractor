@@ -21,7 +21,19 @@ DEFAULT_MANIFEST = ROOT / "rust" / "edge-workspace-links-rs" / "Cargo.toml"
 
 
 def export_view(rows):
-    return [{"source": row.source, "url": row.url, "title": row.title} for row in rows]
+    payload = []
+    for row in rows:
+        if isinstance(row, dict):
+            payload.append(
+                {
+                    "source": row["source"],
+                    "url": row["url"],
+                    "title": row["title"],
+                }
+            )
+            continue
+        payload.append({"source": row.source, "url": row.url, "title": row.title})
+    return payload
 
 
 def link_view(links):
