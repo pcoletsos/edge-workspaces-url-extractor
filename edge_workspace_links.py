@@ -25,7 +25,7 @@ GZIP_MAGIC = b"\x1f\x8b"
 INTERNAL_SCHEMES = {"about", "chrome", "edge", "file", "microsoft-edge"}
 FORMULA_PREFIXES = ("=", "+", "-", "@")
 SUCCESS_STATUSES = {"ok", "no_links"}
-CONTROL_CHAR_TRANSLATION = str.maketrans({chr(i): " " for i in range(32)})
+CONTROL_BYTE_TRANSLATION = bytes.maketrans(bytes(range(32)), b" " * 32)
 NESTED_JSON_HINTS = (
     '"content"',
     '"subdirectories"',
@@ -34,6 +34,7 @@ NESTED_JSON_HINTS = (
     '"webcontents"',
     '"navigationStack"',
 )
+MAX_PAYLOAD_BYTES = 64 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class PayloadScanResult:
     had_gzip_magic: bool
     payloads: list[bytes]
     failed_members: int = 0
+    oversized_members: int = 0
 
 
 @dataclass(frozen=True)
@@ -89,6 +91,7 @@ def scan_gzip_payloads(data: bytes) -> PayloadScanResult:
     seen: set[bytes] = set()
     had_gzip_magic = False
     failed_members = 0
+    oversized_members = 0
 
     for idx in iter_gzip_offsets(data):
         had_gzip_magic = True
@@ -97,6 +100,9 @@ def scan_gzip_payloads(data: bytes) -> PayloadScanResult:
             out = decompressor.decompress(data[idx:])
             if not decompressor.eof or not out:
                 failed_members += 1
+                continue
+            if len(out) > MAX_PAYLOAD_BYTES:
+                oversized_members += 1
                 continue
             digest = hashlib.sha256(out).digest()
             if digest in seen:
@@ -110,6 +116,7 @@ def scan_gzip_payloads(data: bytes) -> PayloadScanResult:
         had_gzip_magic=had_gzip_magic,
         payloads=payloads,
         failed_members=failed_members,
+        oversized_members=oversized_members,
     )
 
 
@@ -144,11 +151,16 @@ def iter_content_objects(obj: Any) -> Iterable[dict[str, Any]]:
             content = current.get("content")
             if isinstance(content, dict):
                 yield content
-            values = list(current.values())
-            stack.extend(reversed(values))
+            for value in reversed(tuple(current.values())):
+                if isinstance(value, (dict, list, str)):
+                    stack.append(value)
         elif isinstance(current, list):
-            stack.extend(reversed(current))
+            for item in reversed(current):
+                if isinstance(item, (dict, list, str)):
+                    stack.append(item)
         elif isinstance(current, str):
+            if "{" not in current and "[" not in current:
+                continue
             candidate = current.strip()
             if not candidate.startswith(("{", "[")):
                 continue
@@ -247,8 +259,8 @@ def extract_favorites_from_content(content: dict[str, Any]) -> list[LinkRecord]:
     return links
 
 
-def clean_json_text(text: str) -> str:
-    return text.translate(CONTROL_CHAR_TRANSLATION)
+def clean_json_text(payload: bytes) -> str:
+    return payload.translate(CONTROL_BYTE_TRANSLATION).decode("utf-8", errors="ignore")
 
 
 def extract_workspace_data(payloads: Iterable[bytes]) -> ExtractionDiagnostics:
@@ -259,7 +271,7 @@ def extract_workspace_data(payloads: Iterable[bytes]) -> ExtractionDiagnostics:
     workspace_markers_found = 0
 
     for payload in payloads:
-        clean = clean_json_text(payload.decode("utf-8", errors="ignore"))
+        clean = clean_json_text(payload)
         for obj in iter_json_objects(clean):
             json_objects_found += 1
             for content in iter_content_objects(obj):
@@ -406,11 +418,14 @@ def process_edge_file(
                 [],
             )
         if not payload_scan.payloads:
+            detail = "Found gzip members but could not decompress a workspace payload."
+            if payload_scan.oversized_members:
+                detail = "Found gzip members, but all decoded payloads exceeded the size guardrail."
             return (
                 FileResult(
                     workspace_file=path.name,
                     status="parse_error",
-                    detail="Found gzip members but could not decompress a workspace payload.",
+                    detail=detail,
                 ),
                 [],
             )
@@ -461,6 +476,8 @@ def process_edge_file(
         detail = "Workspace metadata was found, but no tabs or favorites were extracted."
         if payload_scan.failed_members:
             detail += f" {payload_scan.failed_members} gzip member(s) were skipped."
+        if payload_scan.oversized_members:
+            detail += f" {payload_scan.oversized_members} oversized gzip member(s) were skipped."
         return (
             FileResult(
                 workspace_file=path.name,
@@ -478,6 +495,8 @@ def process_edge_file(
         detail = "Workspace processed successfully, but mode/filters exported no links."
     elif payload_scan.failed_members:
         detail += f" {payload_scan.failed_members} gzip member(s) were skipped."
+    if payload_scan.oversized_members:
+        detail += f" {payload_scan.oversized_members} oversized gzip member(s) were skipped."
 
     return (
         FileResult(

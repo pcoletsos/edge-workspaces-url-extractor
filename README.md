@@ -113,6 +113,26 @@ pip install -e .[dev]
 pytest
 ```
 
+## Benchmarking
+
+Run a repeatable synthetic parser benchmark:
+
+```bash
+python scripts/benchmark_extraction.py --runs 5
+```
+
+Stress nested JSON traversal more heavily:
+
+```bash
+python scripts/benchmark_extraction.py --runs 5 --nested-json-layers 3
+```
+
+Benchmark a local real-world file or directory without committing it:
+
+```bash
+python scripts/benchmark_extraction.py --input "C:\Path\To\Edge Workspaces"
+```
+
 Use the same examples as above, but replace `edge-workspace-links.exe` with:
 
 ```bash
@@ -133,6 +153,7 @@ Workbook safety and reporting behavior:
 - Hyperlinks stay clickable for normal URLs.
 - `--mode tabs` or `--mode favorites` only changes what is exported to `Links`; extracted tab/favorite counts still appear in reports.
 - Non-workspace `.edge` files are reported explicitly instead of looking like empty workspaces.
+- Decoded payloads that exceed the built-in size guardrail are skipped and reported clearly instead of consuming unbounded memory.
 
 ## Notes and limitations
 
