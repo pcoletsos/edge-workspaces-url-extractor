@@ -179,6 +179,28 @@ python scripts/benchmark_extraction.py --input test-files --runs 5
 Use any `.edge` file or directory in place of `test-files`. The benchmark focuses on
 the extraction path and skips workbook generation so parser changes remain measurable.
 
+## Rust evaluation
+
+Milestone M4 evaluates a possible Rust rewrite without changing the shipped Python tool.
+
+Run the parity check for the Rust prototype:
+
+```bash
+python scripts/check_rust_parity.py
+```
+
+Benchmark the committed parity corpus across Python and Rust:
+
+```bash
+python scripts/benchmark_rust_compare.py --release --runs 5 --copies 200
+```
+
+On the committed parity corpus, the Rust prototype is measurably faster for parser-only extraction, but the gain is not large enough to justify replacing the shipped Python tool.
+
+The current decision is `no-go` on replacing Python with Rust. The parser prototype,
+benchmark command, packaging notes, and decision rationale are recorded in
+`docs/rust-evaluation.md`.
+
 ## Troubleshooting
 
 - If you get zero results, confirm the input path contains `.edge` files and

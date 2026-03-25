@@ -1,0 +1,300 @@
+{
+  "cases": [
+    {
+      "name": "dedupe_and_filters",
+      "builder": {
+        "kind": "direct",
+        "tabs": [
+          {
+            "current_index": 0,
+            "navigations": [
+              {
+                "index": 0,
+                "url": "https://example.com/shared",
+                "title": "Shared tab"
+              }
+            ]
+          },
+          {
+            "current_index": 0,
+            "navigations": [
+              {
+                "index": 0,
+                "url": "edge://settings",
+                "title": "Internal settings"
+              }
+            ]
+          },
+          {
+            "current_index": 0,
+            "navigations": [
+              {
+                "index": 0,
+                "url": "https://example.com/tab-only",
+                "title": "Tab only"
+              }
+            ]
+          },
+          {
+            "current_index": 0,
+            "navigations": [
+              {
+                "index": 0,
+                "url": "https://example.com/shared",
+                "title": "Shared duplicate"
+              }
+            ]
+          }
+        ],
+        "favorites": [
+          {
+            "url": "https://example.com/shared",
+            "title": "Shared favorite"
+          },
+          {
+            "url": "https://example.com/favorite-only",
+            "title": "Favorite only"
+          }
+        ]
+      },
+      "expected": {
+        "status": "ok",
+        "tabs": [
+          {
+            "url": "https://example.com/shared",
+            "title": "Shared tab"
+          },
+          {
+            "url": "edge://settings",
+            "title": "Internal settings"
+          },
+          {
+            "url": "https://example.com/tab-only",
+            "title": "Tab only"
+          },
+          {
+            "url": "https://example.com/shared",
+            "title": "Shared duplicate"
+          }
+        ],
+        "favorites": [
+          {
+            "url": "https://example.com/shared",
+            "title": "Shared favorite"
+          },
+          {
+            "url": "https://example.com/favorite-only",
+            "title": "Favorite only"
+          }
+        ],
+        "exports": {
+          "both": [
+            {
+              "source": "favorite",
+              "url": "https://example.com/shared",
+              "title": "Shared favorite"
+            },
+            {
+              "source": "favorite",
+              "url": "https://example.com/favorite-only",
+              "title": "Favorite only"
+            },
+            {
+              "source": "tab",
+              "url": "edge://settings",
+              "title": "Internal settings"
+            },
+            {
+              "source": "tab",
+              "url": "https://example.com/tab-only",
+              "title": "Tab only"
+            }
+          ],
+          "tabs": [
+            {
+              "source": "tab",
+              "url": "https://example.com/shared",
+              "title": "Shared tab"
+            },
+            {
+              "source": "tab",
+              "url": "edge://settings",
+              "title": "Internal settings"
+            },
+            {
+              "source": "tab",
+              "url": "https://example.com/tab-only",
+              "title": "Tab only"
+            }
+          ],
+          "favorites": [
+            {
+              "source": "favorite",
+              "url": "https://example.com/shared",
+              "title": "Shared favorite"
+            },
+            {
+              "source": "favorite",
+              "url": "https://example.com/favorite-only",
+              "title": "Favorite only"
+            }
+          ],
+          "exclude_internal": [
+            {
+              "source": "favorite",
+              "url": "https://example.com/shared",
+              "title": "Shared favorite"
+            },
+            {
+              "source": "favorite",
+              "url": "https://example.com/favorite-only",
+              "title": "Favorite only"
+            },
+            {
+              "source": "tab",
+              "url": "https://example.com/tab-only",
+              "title": "Tab only"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "nested_json_fallback",
+      "builder": {
+        "kind": "nested_json",
+        "tabs": [
+          {
+            "current_index": 99,
+            "navigations": [
+              {
+                "index": 0,
+                "url": "https://example.com/old",
+                "title": "Old"
+              },
+              {
+                "index": 1,
+                "url": "https://example.com/final",
+                "title": "Final"
+              }
+            ]
+          }
+        ],
+        "favorites": [
+          {
+            "url": "https://example.com/nested-favorite",
+            "title": "Nested favorite"
+          }
+        ]
+      },
+      "expected": {
+        "status": "ok",
+        "tabs": [
+          {
+            "url": "https://example.com/final",
+            "title": "Final"
+          }
+        ],
+        "favorites": [
+          {
+            "url": "https://example.com/nested-favorite",
+            "title": "Nested favorite"
+          }
+        ],
+        "exports": {
+          "both": [
+            {
+              "source": "favorite",
+              "url": "https://example.com/nested-favorite",
+              "title": "Nested favorite"
+            },
+            {
+              "source": "tab",
+              "url": "https://example.com/final",
+              "title": "Final"
+            }
+          ],
+          "tabs": [
+            {
+              "source": "tab",
+              "url": "https://example.com/final",
+              "title": "Final"
+            }
+          ],
+          "favorites": [
+            {
+              "source": "favorite",
+              "url": "https://example.com/nested-favorite",
+              "title": "Nested favorite"
+            }
+          ],
+          "exclude_internal": [
+            {
+              "source": "favorite",
+              "url": "https://example.com/nested-favorite",
+              "title": "Nested favorite"
+            },
+            {
+              "source": "tab",
+              "url": "https://example.com/final",
+              "title": "Final"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "workspace_without_links",
+      "builder": {
+        "kind": "direct",
+        "tabs": [],
+        "favorites": []
+      },
+      "expected": {
+        "status": "no_links",
+        "tabs": [],
+        "favorites": [],
+        "exports": {
+          "both": [],
+          "tabs": [],
+          "favorites": [],
+          "exclude_internal": []
+        }
+      }
+    },
+    {
+      "name": "not_workspace_payload",
+      "builder": {
+        "kind": "non_workspace"
+      },
+      "expected": {
+        "status": "not_workspace",
+        "tabs": [],
+        "favorites": [],
+        "exports": {
+          "both": [],
+          "tabs": [],
+          "favorites": [],
+          "exclude_internal": []
+        }
+      }
+    },
+    {
+      "name": "corrupt_gzip_member",
+      "builder": {
+        "kind": "invalid_gzip"
+      },
+      "expected": {
+        "status": "parse_error",
+        "tabs": [],
+        "favorites": [],
+        "exports": {
+          "both": [],
+          "tabs": [],
+          "favorites": [],
+          "exclude_internal": []
+        }
+      }
+    }
+  ]
+}
