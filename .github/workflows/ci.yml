@@ -28,3 +28,7 @@ jobs:
       - name: Verify legacy wrapper in wheel
         run: |
           python -c "import pathlib, zipfile; whl = next(pathlib.Path('dist').glob('*.whl')); names = set(zipfile.ZipFile(whl).namelist()); assert any(name.endswith('edge_workspace_links.py') for name in names), names"
+      - name: Smoke test installed legacy wrapper
+        run: |
+          python -c "import pathlib, shutil, subprocess, sys; shutil.rmtree('wheel-smoke', ignore_errors=True); whl = next(pathlib.Path('dist').glob('*.whl')); subprocess.run([sys.executable, '-m', 'pip', 'install', '--force-reinstall', '--no-deps', '--target', 'wheel-smoke', str(whl)], check=True)"
+          python -I -c "import pathlib, sys; target = pathlib.Path('wheel-smoke').resolve(); sys.path.insert(0, str(target)); import edge_workspace_links as mod; assert pathlib.Path(mod.__file__).resolve().is_relative_to(target); rows = mod.build_export_rows('workspace.edge', [mod.LinkRecord(url='https://tab.example', title='Tab')], [mod.LinkRecord(url='https://favorite.example', title='Favorite')], 'both', set()); assert isinstance(rows[0], dict); summary = mod.build_summary_rows([mod.Path('.') / 'workspace.edge'], [mod.FileResult(workspace_file='workspace.edge', status='ok', extracted_tab_count=1, extracted_favorite_count=1, exported_link_count=2)], rows); assert ('unique_exported_urls', 2) in summary; assert mod.resolve_output_path(mod.Path('.'), 'report').name == 'report'"

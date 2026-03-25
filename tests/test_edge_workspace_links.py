@@ -96,6 +96,7 @@ def test_wrapper_preserves_legacy_aliases_and_export_row_shape(tmp_path: Path) -
 
     resolved = mod.resolve_output_path(tmp_path, None)
     assert resolved.name == "edge_workspace_links.xlsx"
+    assert mod.resolve_output_path(tmp_path, "report").name == "report"
     assert mod.validate_output_path(tmp_path / "report.xlsx") is None
 
     rows = mod.build_export_rows(
@@ -109,6 +110,51 @@ def test_wrapper_preserves_legacy_aliases_and_export_row_shape(tmp_path: Path) -
     assert isinstance(rows[0], dict)
     assert rows[0]["workspace_file"] == "workspace.edge"
     assert rows[0]["url"] == "https://favorite.example"
+
+    summary = mod.build_summary_rows(
+        edge_files=[tmp_path / "workspace.edge"],
+        file_rows=[
+                mod.FileResult(
+                    workspace_file="workspace.edge",
+                    status="ok",
+                    extracted_tab_count=1,
+                    extracted_favorite_count=1,
+                    exported_link_count=2,
+                )
+            ],
+            rows=rows,
+        )
+
+    assert ("exported_links_total", 2) in summary
+    assert ("unique_exported_urls", 2) in summary
+
+
+def test_wrapper_process_edge_file_preserves_legacy_export_row_shape(tmp_path: Path) -> None:
+    edge_path = write_edge_file(
+        tmp_path / "workspace.edge",
+        make_workspace_payload(
+            tabs=[("https://tab.example", "Tab title")],
+            favorites=[("https://favorite.example", "Favorite title")],
+        ),
+    )
+
+    file_result, rows = mod.process_edge_file(edge_path, "both", set())
+
+    assert file_result.status == "ok"
+    assert rows == [
+        {
+            "workspace_file": "workspace.edge",
+            "source": "favorite",
+            "url": "https://favorite.example",
+            "title": "Favorite title",
+        },
+        {
+            "workspace_file": "workspace.edge",
+            "source": "tab",
+            "url": "https://tab.example",
+            "title": "Tab title",
+        },
+    ]
 
 
 def test_scan_gzip_payloads_deduplicates_payloads_and_extracts_workspace_data() -> None:
