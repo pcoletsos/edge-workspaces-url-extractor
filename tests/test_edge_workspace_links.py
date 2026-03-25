@@ -91,6 +91,26 @@ def workbook_metrics(sheet) -> dict[str, int]:
     }
 
 
+def test_wrapper_preserves_legacy_aliases_and_export_row_shape(tmp_path: Path) -> None:
+    assert mod.CONTROL_BYTE_TRANSLATION == mod.CONTROL_CHAR_TRANSLATION
+
+    resolved = mod.resolve_output_path(tmp_path, None)
+    assert resolved.name == "edge_workspace_links.xlsx"
+    assert mod.validate_output_path(tmp_path / "report.xlsx") is None
+
+    rows = mod.build_export_rows(
+        workspace_file="workspace.edge",
+        tabs=[mod.LinkRecord(url="https://tab.example", title="Tab")],
+        favorites=[mod.LinkRecord(url="https://favorite.example", title="Favorite")],
+        mode="both",
+        exclude_schemes=set(),
+    )
+
+    assert isinstance(rows[0], dict)
+    assert rows[0]["workspace_file"] == "workspace.edge"
+    assert rows[0]["url"] == "https://favorite.example"
+
+
 def test_scan_gzip_payloads_deduplicates_payloads_and_extracts_workspace_data() -> None:
     first = make_workspace_payload(
         tabs=[
