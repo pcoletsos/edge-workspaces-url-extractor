@@ -20,7 +20,7 @@ from edge_workspace_links_app import (
     LinkRecord,
     PayloadScanResult,
     build_export_rows as _build_export_rows,
-    build_summary_rows,
+    build_summary_rows as _build_summary_rows,
     clean_json_text,
     cli,
     default_input_path,
@@ -36,7 +36,7 @@ from edge_workspace_links_app import (
     iter_json_objects,
     main,
     parse_args,
-    process_edge_file,
+    process_edge_file as _process_edge_file,
     resolve_output_targets as _resolve_output_targets,
     safe_excel_text,
     safe_hyperlink_target,
@@ -56,6 +56,26 @@ resolve_output_targets = _resolve_output_targets
 validate_output_targets = _validate_output_targets
 
 
+def _legacy_export_row(row: ExportRow) -> dict[str, str]:
+    return {
+        "workspace_file": row.workspace_file,
+        "source": row.source,
+        "url": row.url,
+        "title": row.title,
+    }
+
+
+def _coerce_export_row(row: ExportRow | dict[str, str]) -> ExportRow:
+    if isinstance(row, ExportRow):
+        return row
+    return ExportRow(
+        workspace_file=row["workspace_file"],
+        source=row["source"],
+        url=row["url"],
+        title=row["title"],
+    )
+
+
 def build_export_rows(
     workspace_file: str,
     tabs: list[LinkRecord],
@@ -64,12 +84,7 @@ def build_export_rows(
     exclude_schemes: set[str],
 ) -> list[dict[str, str]]:
     return [
-        {
-            "workspace_file": row.workspace_file,
-            "source": row.source,
-            "url": row.url,
-            "title": row.title,
-        }
+        _legacy_export_row(row)
         for row in _build_export_rows(
             workspace_file=workspace_file,
             tabs=tabs,
@@ -80,11 +95,38 @@ def build_export_rows(
     ]
 
 
+def build_summary_rows(
+    edge_files: list[Path],
+    file_rows: list[FileResult],
+    rows: list[ExportRow] | list[dict[str, str]],
+) -> list[tuple[str, int]]:
+    return _build_summary_rows(
+        edge_files=edge_files,
+        file_rows=file_rows,
+        rows=[_coerce_export_row(row) for row in rows],
+    )
+
+
+def process_edge_file(
+    path: Path,
+    mode: str,
+    exclude_schemes: set[str],
+) -> tuple[FileResult, list[dict[str, str]]]:
+    file_result, rows = _process_edge_file(
+        path=path,
+        mode=mode,
+        exclude_schemes=exclude_schemes,
+    )
+    return file_result, [_legacy_export_row(row) for row in rows]
+
+
 def resolve_output_path(
     input_path: Path,
     output: str | None,
     output_format: str = "xlsx",
 ) -> Path:
+    if output:
+        return Path(output).expanduser()
     return _resolve_output_targets(input_path, output, output_format)[0]
 
 
