@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edge-workspace-links"
+version = "0.1.0"
+description = "Extract open tab URLs and favorites from Microsoft Edge Workspace .edge files."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "openpyxl>=3.1,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<9",
+]
+test = [
+  "pytest>=8,<9",
+]
+
+[tool.setuptools]
+py-modules = ["edge_workspace_links"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -97,13 +97,20 @@ Common options:
 
 Python requirements:
 
-- Python 3.8+
+- Python 3.10+
 - `openpyxl`
 
 Install the dependency:
 
 ```bash
 pip install openpyxl
+```
+
+For local development and tests:
+
+```bash
+pip install -e .[dev]
+pytest
 ```
 
 Use the same examples as above, but replace `edge-workspace-links.exe` with:
@@ -117,8 +124,15 @@ python edge_workspace_links.py
 Default output is `edge_workspace_links.xlsx` in the input directory with three sheets:
 
 - `Links`: `workspace_file`, `source`, `url`, `title` (`source` is `tab` or `favorite`)
-- `Summary Report`: `metric`, `value` (includes totals for tabs, favorites, and overall unique URLs)
-- `Per File Report`: `workspace_file`, `open_tab_count`, `favorite_count`, `links_written`
+- `Summary Report`: `metric`, `value` (includes extracted totals, exported totals, and file status counters)
+- `Per File Report`: `workspace_file`, `status`, `detail`, `extracted_tab_count`, `extracted_favorite_count`, `exported_link_count`
+
+Workbook safety and reporting behavior:
+
+- Formula-like text in filenames, URLs, and titles is written as literal text so Excel does not evaluate it.
+- Hyperlinks stay clickable for normal URLs.
+- `--mode tabs` or `--mode favorites` only changes what is exported to `Links`; extracted tab/favorite counts still appear in reports.
+- Non-workspace `.edge` files are reported explicitly instead of looking like empty workspaces.
 
 ## Notes and limitations
 
@@ -140,6 +154,8 @@ The executable is written to `dist\edge-workspace-links.exe`.
 
 - If you get zero results, confirm the input path contains `.edge` files and
   that they are Edge Workspace files (not other Edge data).
+- Invalid output paths are reported before workbook generation starts.
+- Mixed input folders can succeed partially; check `Per File Report` and stderr for `not_workspace`, `read_error`, `parse_error`, or `no_links` statuses.
 
 ## License
 

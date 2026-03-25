@@ -10,8 +10,10 @@ import hashlib
 import json
 import sys
 import zlib
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
+from urllib.parse import urlsplit
 
 try:
     from openpyxl import Workbook
@@ -21,6 +23,40 @@ except ImportError:
 
 GZIP_MAGIC = b"\x1f\x8b"
 INTERNAL_SCHEMES = {"about", "chrome", "edge", "file", "microsoft-edge"}
+FORMULA_PREFIXES = ("=", "+", "-", "@")
+SUCCESS_STATUSES = {"ok", "no_links"}
+
+
+@dataclass(frozen=True)
+class LinkRecord:
+    url: str
+    title: str
+
+
+@dataclass(frozen=True)
+class PayloadScanResult:
+    had_gzip_magic: bool
+    payloads: list[bytes]
+    failed_members: int = 0
+
+
+@dataclass(frozen=True)
+class ExtractionDiagnostics:
+    tabs: list[LinkRecord]
+    favorites: list[LinkRecord]
+    json_objects_found: int = 0
+    content_objects_found: int = 0
+    workspace_markers_found: int = 0
+
+
+@dataclass(frozen=True)
+class FileResult:
+    workspace_file: str
+    status: str
+    detail: str = ""
+    extracted_tab_count: int = 0
+    extracted_favorite_count: int = 0
+    exported_link_count: int = 0
 
 
 def default_input_path() -> str:
@@ -39,14 +75,19 @@ def iter_gzip_offsets(data: bytes) -> Iterable[int]:
         start = idx + 1
 
 
-def decompress_payloads(data: bytes) -> list[bytes]:
+def scan_gzip_payloads(data: bytes) -> PayloadScanResult:
     payloads: list[bytes] = []
     seen: set[bytes] = set()
+    had_gzip_magic = False
+    failed_members = 0
+
     for idx in iter_gzip_offsets(data):
+        had_gzip_magic = True
         try:
             decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
             out = decompressor.decompress(data[idx:])
             if not decompressor.eof or not out:
+                failed_members += 1
                 continue
             digest = hashlib.sha256(out).digest()
             if digest in seen:
@@ -54,8 +95,13 @@ def decompress_payloads(data: bytes) -> list[bytes]:
             seen.add(digest)
             payloads.append(out)
         except zlib.error:
-            continue
-    return payloads
+            failed_members += 1
+
+    return PayloadScanResult(
+        had_gzip_magic=had_gzip_magic,
+        payloads=payloads,
+        failed_members=failed_members,
+    )
 
 
 def iter_json_objects(text: str) -> Iterable[Any]:
@@ -100,8 +146,15 @@ def typed_value(value: Any) -> Any:
     return value
 
 
-def extract_tabs_from_content(content: dict[str, Any]) -> list[dict[str, str]]:
-    links: list[dict[str, str]] = []
+def has_workspace_markers(content: dict[str, Any]) -> bool:
+    subdirectories = content.get("subdirectories", {})
+    return isinstance(subdirectories, dict) and (
+        "tabstripmodel" in subdirectories or "favorites" in subdirectories
+    )
+
+
+def extract_tabs_from_content(content: dict[str, Any]) -> list[LinkRecord]:
+    links: list[LinkRecord] = []
     webcontents = (
         content.get("subdirectories", {})
         .get("tabstripmodel", {})
@@ -145,13 +198,13 @@ def extract_tabs_from_content(content: dict[str, Any]) -> list[dict[str, str]]:
             continue
         title_value = typed_value(entry_storage.get("title"))
         title = title_value if isinstance(title_value, str) else ""
-        links.append({"url": url, "title": title})
+        links.append(LinkRecord(url=url, title=title))
 
     return links
 
 
-def extract_favorites_from_content(content: dict[str, Any]) -> list[dict[str, str]]:
-    links: list[dict[str, str]] = []
+def extract_favorites_from_content(content: dict[str, Any]) -> list[LinkRecord]:
+    links: list[LinkRecord] = []
     favorites = content.get("subdirectories", {}).get("favorites", {})
     if not isinstance(favorites, dict):
         return links
@@ -168,24 +221,40 @@ def extract_favorites_from_content(content: dict[str, Any]) -> list[dict[str, st
         if str(node_type) != "1" or not isinstance(url, str) or not url:
             continue
         title = node.get("title")
-        links.append({"url": url, "title": title if isinstance(title, str) else ""})
+        links.append(LinkRecord(url=url, title=title if isinstance(title, str) else ""))
 
     return links
 
 
-def extract_workspace_data(payloads: Iterable[bytes]) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    text = b"\n".join(payloads).decode("utf-8", errors="ignore")
-    clean = "".join(ch if ord(ch) >= 0x20 else " " for ch in text)
+def clean_json_text(text: str) -> str:
+    return "".join(ch if ord(ch) >= 0x20 else " " for ch in text)
 
-    tabs: list[dict[str, str]] = []
-    favorites: list[dict[str, str]] = []
 
-    for obj in iter_json_objects(clean):
-        for content in iter_content_objects(obj):
-            tabs.extend(extract_tabs_from_content(content))
-            favorites.extend(extract_favorites_from_content(content))
+def extract_workspace_data(payloads: Iterable[bytes]) -> ExtractionDiagnostics:
+    tabs: list[LinkRecord] = []
+    favorites: list[LinkRecord] = []
+    json_objects_found = 0
+    content_objects_found = 0
+    workspace_markers_found = 0
 
-    return tabs, favorites
+    for payload in payloads:
+        clean = clean_json_text(payload.decode("utf-8", errors="ignore"))
+        for obj in iter_json_objects(clean):
+            json_objects_found += 1
+            for content in iter_content_objects(obj):
+                content_objects_found += 1
+                if has_workspace_markers(content):
+                    workspace_markers_found += 1
+                tabs.extend(extract_tabs_from_content(content))
+                favorites.extend(extract_favorites_from_content(content))
+
+    return ExtractionDiagnostics(
+        tabs=tabs,
+        favorites=favorites,
+        json_objects_found=json_objects_found,
+        content_objects_found=content_objects_found,
+        workspace_markers_found=workspace_markers_found,
+    )
 
 
 def iter_edge_files(input_path: Path) -> list[Path]:
@@ -196,33 +265,217 @@ def iter_edge_files(input_path: Path) -> list[Path]:
     raise FileNotFoundError(f"Input path not found: {input_path}")
 
 
-def filter_links(
-    links: list[dict[str, str]], exclude_schemes: set[str]
-) -> list[dict[str, str]]:
+def filter_links(links: list[LinkRecord], exclude_schemes: set[str]) -> list[LinkRecord]:
     if not exclude_schemes:
         return links
-    filtered: list[dict[str, str]] = []
+    filtered: list[LinkRecord] = []
     for link in links:
-        url = link.get("url", "")
-        scheme = url.split(":", 1)[0].lower() if ":" in url else ""
+        scheme = link.url.split(":", 1)[0].lower() if ":" in link.url else ""
         if scheme in exclude_schemes:
             continue
         filtered.append(link)
     return filtered
 
 
-def resolve_output_path(input_path: Path, output: str | None) -> str:
+def unique_by_url(links: list[LinkRecord]) -> dict[str, str]:
+    url_to_title: dict[str, str] = {}
+    for link in links:
+        if not link.url:
+            continue
+        if link.url not in url_to_title or (not url_to_title[link.url] and link.title):
+            url_to_title[link.url] = link.title
+    return url_to_title
+
+
+def build_export_rows(
+    workspace_file: str,
+    tabs: list[LinkRecord],
+    favorites: list[LinkRecord],
+    mode: str,
+    exclude_schemes: set[str],
+) -> list[dict[str, str]]:
+    filtered_tabs = filter_links(tabs, exclude_schemes)
+    filtered_favorites = filter_links(favorites, exclude_schemes)
+
+    tab_urls = unique_by_url(filtered_tabs) if mode in {"both", "tabs"} else {}
+    favorite_urls = unique_by_url(filtered_favorites) if mode in {"both", "favorites"} else {}
+
+    combined_urls: dict[str, tuple[str, str]] = {}
+    for url, title in favorite_urls.items():
+        combined_urls[url] = ("favorite", title)
+    for url, title in tab_urls.items():
+        if url in combined_urls:
+            continue
+        combined_urls[url] = ("tab", title)
+
+    return [
+        {
+            "workspace_file": workspace_file,
+            "source": source,
+            "url": url,
+            "title": title,
+        }
+        for url, (source, title) in combined_urls.items()
+    ]
+
+
+def resolve_output_path(input_path: Path, output: str | None) -> Path:
     if output:
-        return output
+        return Path(output).expanduser()
     base_dir = input_path if input_path.is_dir() else input_path.parent
-    return str(base_dir / "edge_workspace_links.xlsx")
+    return base_dir / "edge_workspace_links.xlsx"
+
+
+def validate_output_path(output_path: Path) -> str | None:
+    parent = output_path.parent if output_path.parent != Path("") else Path(".")
+    if not parent.exists():
+        return f"Output directory not found: {parent}"
+    if not parent.is_dir():
+        return f"Output path parent is not a directory: {parent}"
+    if output_path.exists() and output_path.is_dir():
+        return f"Output path is a directory: {output_path}"
+    return None
+
+
+def safe_excel_text(value: str) -> str:
+    stripped = value.lstrip()
+    if stripped.startswith(FORMULA_PREFIXES):
+        return f"'{value}"
+    return value
+
+
+def safe_hyperlink_target(url: str) -> str | None:
+    stripped = url.strip()
+    if not stripped:
+        return None
+    if stripped.startswith(FORMULA_PREFIXES):
+        return None
+    parsed = urlsplit(stripped)
+    if not parsed.scheme:
+        return None
+    return stripped
+
+
+def process_edge_file(
+    path: Path,
+    mode: str,
+    exclude_schemes: set[str],
+) -> tuple[FileResult, list[dict[str, str]]]:
+    try:
+        data = path.read_bytes()
+    except OSError as exc:
+        return (
+            FileResult(
+                workspace_file=path.name,
+                status="read_error",
+                detail=f"Could not read file: {exc}",
+            ),
+            [],
+        )
+
+    try:
+        payload_scan = scan_gzip_payloads(data)
+        if not payload_scan.had_gzip_magic:
+            return (
+                FileResult(
+                    workspace_file=path.name,
+                    status="not_workspace",
+                    detail="No gzip workspace payloads were found.",
+                ),
+                [],
+            )
+        if not payload_scan.payloads:
+            return (
+                FileResult(
+                    workspace_file=path.name,
+                    status="parse_error",
+                    detail="Found gzip members but could not decompress a workspace payload.",
+                ),
+                [],
+            )
+
+        diagnostics = extract_workspace_data(payload_scan.payloads)
+    except Exception as exc:
+        return (
+            FileResult(
+                workspace_file=path.name,
+                status="parse_error",
+                detail=f"Could not parse workspace data: {exc}",
+            ),
+            [],
+        )
+
+    if diagnostics.json_objects_found == 0:
+        return (
+            FileResult(
+                workspace_file=path.name,
+                status="parse_error",
+                detail="Decompressed payloads did not yield readable JSON objects.",
+            ),
+            [],
+        )
+
+    if diagnostics.workspace_markers_found == 0:
+        return (
+            FileResult(
+                workspace_file=path.name,
+                status="not_workspace",
+                detail="Decoded payloads did not contain Edge Workspace content.",
+            ),
+            [],
+        )
+
+    export_rows = build_export_rows(
+        workspace_file=path.name,
+        tabs=diagnostics.tabs,
+        favorites=diagnostics.favorites,
+        mode=mode,
+        exclude_schemes=exclude_schemes,
+    )
+    extracted_tab_count = len(diagnostics.tabs)
+    extracted_favorite_count = len(diagnostics.favorites)
+    exported_link_count = len(export_rows)
+
+    if extracted_tab_count == 0 and extracted_favorite_count == 0:
+        detail = "Workspace metadata was found, but no tabs or favorites were extracted."
+        if payload_scan.failed_members:
+            detail += f" {payload_scan.failed_members} gzip member(s) were skipped."
+        return (
+            FileResult(
+                workspace_file=path.name,
+                status="no_links",
+                detail=detail,
+                extracted_tab_count=extracted_tab_count,
+                extracted_favorite_count=extracted_favorite_count,
+                exported_link_count=exported_link_count,
+            ),
+            export_rows,
+        )
+
+    detail = "Workspace processed successfully."
+    if exported_link_count == 0:
+        detail = "Workspace processed successfully, but mode/filters exported no links."
+    elif payload_scan.failed_members:
+        detail += f" {payload_scan.failed_members} gzip member(s) were skipped."
+
+    return (
+        FileResult(
+            workspace_file=path.name,
+            status="ok",
+            detail=detail,
+            extracted_tab_count=extracted_tab_count,
+            extracted_favorite_count=extracted_favorite_count,
+            exported_link_count=exported_link_count,
+        ),
+        export_rows,
+    )
 
 
 def write_output(
     rows: list[dict[str, str]],
     summary_rows: list[tuple[str, int]],
-    file_rows: list[dict[str, str | int]],
-    output_path: str,
+    file_rows: list[FileResult],
+    output_path: Path,
 ) -> None:
     workbook = Workbook()
 
@@ -230,11 +483,19 @@ def write_output(
     links_sheet.title = "Links"
     links_sheet.append(["workspace_file", "source", "url", "title"])
     for row in rows:
-        links_sheet.append([row["workspace_file"], row["source"], row["url"], row["title"]])
+        display_url = safe_excel_text(row["url"])
+        links_sheet.append(
+            [
+                safe_excel_text(row["workspace_file"]),
+                row["source"],
+                display_url,
+                safe_excel_text(row["title"]),
+            ]
+        )
         url_cell = links_sheet.cell(row=links_sheet.max_row, column=3)
-        url_value = url_cell.value
-        if isinstance(url_value, str) and url_value:
-            url_cell.hyperlink = url_value
+        hyperlink_target = safe_hyperlink_target(row["url"])
+        if hyperlink_target:
+            url_cell.hyperlink = hyperlink_target
             url_cell.style = "Hyperlink"
 
     summary_sheet = workbook.create_sheet("Summary Report")
@@ -243,14 +504,25 @@ def write_output(
         summary_sheet.append([metric, value])
 
     per_file_sheet = workbook.create_sheet("Per File Report")
-    per_file_sheet.append(["workspace_file", "open_tab_count", "favorite_count", "links_written"])
+    per_file_sheet.append(
+        [
+            "workspace_file",
+            "status",
+            "detail",
+            "extracted_tab_count",
+            "extracted_favorite_count",
+            "exported_link_count",
+        ]
+    )
     for row in file_rows:
         per_file_sheet.append(
             [
-                row["workspace_file"],
-                row["open_tab_count"],
-                row["favorite_count"],
-                row["links_written"],
+                safe_excel_text(row.workspace_file),
+                row.status,
+                safe_excel_text(row.detail),
+                row.extracted_tab_count,
+                row.extracted_favorite_count,
+                row.exported_link_count,
             ]
         )
 
@@ -259,10 +531,54 @@ def write_output(
         sheet.auto_filter.ref = sheet.dimensions
         for column_cells in sheet.columns:
             column_letter = column_cells[0].column_letter
-            max_len = max(len(str(cell.value)) if cell.value is not None else 0 for cell in column_cells)
+            max_len = max(
+                len(str(cell.value)) if cell.value is not None else 0 for cell in column_cells
+            )
             sheet.column_dimensions[column_letter].width = min(max_len + 2, 80)
 
     workbook.save(output_path)
+
+
+def build_summary_rows(edge_files: list[Path], file_rows: list[FileResult], rows: list[dict[str, str]]) -> list[tuple[str, int]]:
+    successful_rows = [row for row in file_rows if row.status in SUCCESS_STATUSES]
+    files_with_tabs = sum(1 for row in successful_rows if row.extracted_tab_count > 0)
+    files_with_favorites = sum(1 for row in successful_rows if row.extracted_favorite_count > 0)
+    files_with_extracted_links = sum(
+        1 for row in successful_rows if (row.extracted_tab_count + row.extracted_favorite_count) > 0
+    )
+    files_with_exported_links = sum(1 for row in successful_rows if row.exported_link_count > 0)
+    no_link_workspaces = sum(1 for row in file_rows if row.status == "no_links")
+    read_errors = sum(1 for row in file_rows if row.status == "read_error")
+    parse_errors = sum(1 for row in file_rows if row.status == "parse_error")
+    not_workspace_files = sum(1 for row in file_rows if row.status == "not_workspace")
+    tabs_total = sum(row.extracted_tab_count for row in successful_rows)
+    favorites_total = sum(row.extracted_favorite_count for row in successful_rows)
+    links_total = len(rows)
+    unique_urls = len({row["url"] for row in rows})
+
+    return [
+        ("input_files_found", len(edge_files)),
+        ("workspace_files_processed", len(successful_rows)),
+        ("workspace_files_with_tabs_extracted", files_with_tabs),
+        ("workspace_files_with_favorites_extracted", files_with_favorites),
+        ("workspace_files_with_extracted_links", files_with_extracted_links),
+        ("workspace_files_with_exported_links", files_with_exported_links),
+        ("no_link_workspaces", no_link_workspaces),
+        ("not_workspace_files", not_workspace_files),
+        ("read_error_files", read_errors),
+        ("parse_error_files", parse_errors),
+        ("extracted_tabs_total", tabs_total),
+        ("extracted_favorites_total", favorites_total),
+        ("exported_links_total", links_total),
+        ("unique_exported_urls", unique_urls),
+    ]
+
+
+def format_status_message(file_result: FileResult) -> str:
+    message = f"{file_result.workspace_file}: {file_result.status}"
+    if file_result.detail:
+        message += f" - {file_result.detail}"
+    return message
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -288,18 +604,18 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--exclude-schemes",
         nargs="*",
         default=[],
-        help="URL schemes to exclude (example: edge chrome file).",
+        help="URL schemes to exclude from exported links (example: edge chrome file).",
     )
     parser.add_argument(
         "--exclude-internal",
         action="store_true",
-        help="Exclude internal browser URLs (edge, chrome, about, file).",
+        help="Exclude internal browser URLs (about, chrome, edge, file, microsoft-edge).",
     )
     parser.add_argument(
         "--mode",
         choices=["both", "tabs", "favorites"],
         default="both",
-        help="What to export to the Links sheet (default: both).",
+        help="What to export to the Links sheet (default: both). Reports still show extracted tab and favorite counts.",
     )
     parser.add_argument(
         "--sort",
@@ -330,71 +646,26 @@ def main(argv: list[str]) -> int:
         print("No .edge files found in the input path.", file=sys.stderr)
         return 1
 
+    output_path = resolve_output_path(input_path, args.output)
+    output_path_error = validate_output_path(output_path)
+    if output_path_error:
+        print(output_path_error, file=sys.stderr)
+        return 2
+
     exclude_schemes = {s.lower() for s in args.exclude_schemes}
     if args.exclude_internal:
         exclude_schemes.update(INTERNAL_SCHEMES)
 
     rows: list[dict[str, str]] = []
-    per_file_rows: list[dict[str, str | int]] = []
+    file_rows: list[FileResult] = []
     for path in edge_files:
-        data = path.read_bytes()
-        payloads = decompress_payloads(data)
-        if not payloads:
-            per_file_rows.append(
-                {
-                    "workspace_file": path.name,
-                    "open_tab_count": 0,
-                    "favorite_count": 0,
-                    "links_written": 0,
-                }
-            )
-            continue
-        tabs, favorites = extract_workspace_data(payloads)
-        tabs = filter_links(tabs, exclude_schemes)
-        favorites = filter_links(favorites, exclude_schemes)
-
-        def unique_by_url(links: list[dict[str, str]]) -> dict[str, str]:
-            url_to_title: dict[str, str] = {}
-            for link in links:
-                url = link.get("url")
-                if not isinstance(url, str) or not url:
-                    continue
-                title = link.get("title", "")
-                if not isinstance(title, str):
-                    title = ""
-                if url not in url_to_title or (not url_to_title[url] and title):
-                    url_to_title[url] = title
-            return url_to_title
-
-        tab_urls = unique_by_url(tabs) if args.mode in {"both", "tabs"} else {}
-        favorite_urls = unique_by_url(favorites) if args.mode in {"both", "favorites"} else {}
-
-        combined_urls: dict[str, tuple[str, str]] = {}
-        for url, title in favorite_urls.items():
-            combined_urls[url] = ("favorite", title)
-        for url, title in tab_urls.items():
-            if url in combined_urls:
-                continue
-            combined_urls[url] = ("tab", title)
-
-        per_file_rows.append(
-            {
-                "workspace_file": path.name,
-                "open_tab_count": len(tab_urls),
-                "favorite_count": len(favorite_urls),
-                "links_written": len(combined_urls),
-            }
+        file_result, export_rows = process_edge_file(
+            path=path,
+            mode=args.mode,
+            exclude_schemes=exclude_schemes,
         )
-
-        for url, (source, title) in combined_urls.items():
-            rows.append(
-                {
-                    "workspace_file": path.name,
-                    "source": source,
-                    "url": url,
-                    "title": title,
-                }
-            )
+        file_rows.append(file_result)
+        rows.extend(export_rows)
 
     if args.sort:
         rows.sort(
@@ -405,38 +676,40 @@ def main(argv: list[str]) -> int:
                 row["title"],
             )
         )
+        file_rows = sorted(file_rows, key=lambda row: row.workspace_file)
 
-    if args.sort:
-        per_file_rows.sort(key=lambda row: row["workspace_file"])
+    for file_result in file_rows:
+        if file_result.status != "ok":
+            print(format_status_message(file_result), file=sys.stderr)
 
-    total_files = len(edge_files)
-    files_with_links = sum(1 for row in per_file_rows if row["links_written"] > 0)
-    files_with_tabs = sum(1 for row in per_file_rows if row["open_tab_count"] > 0)
-    files_with_favorites = sum(1 for row in per_file_rows if row["favorite_count"] > 0)
-    tabs_total = sum(int(row["open_tab_count"]) for row in per_file_rows)
-    favorites_total = sum(int(row["favorite_count"]) for row in per_file_rows)
-    links_total = len(rows)
-    unique_urls = len({row["url"] for row in rows})
-    summary_rows = [
-        ("files_found", total_files),
-        ("files_with_any_links", files_with_links),
-        ("files_with_tabs", files_with_tabs),
-        ("files_with_favorites", files_with_favorites),
-        ("tabs_total", tabs_total),
-        ("favorites_total", favorites_total),
-        ("links_total", links_total),
-        ("unique_urls", unique_urls),
-    ]
+    successful_rows = [row for row in file_rows if row.status in SUCCESS_STATUSES]
+    if not successful_rows:
+        print("No workspace files were processed successfully.", file=sys.stderr)
+        return 1
 
-    output_path = resolve_output_path(input_path, args.output)
-    write_output(rows, summary_rows, per_file_rows, output_path)
+    summary_rows = build_summary_rows(edge_files=edge_files, file_rows=file_rows, rows=rows)
+
+    try:
+        write_output(
+            rows=rows,
+            summary_rows=summary_rows,
+            file_rows=file_rows,
+            output_path=output_path,
+        )
+    except OSError as exc:
+        print(f"Could not write workbook: {exc}", file=sys.stderr)
+        return 2
 
     print(
-        f"Wrote {len(rows)} links from {len(edge_files)} workspace file(s) to {output_path}",
+        f"Wrote {len(rows)} exported link(s) from {len(successful_rows)} workspace file(s) to {output_path}",
         file=sys.stderr,
     )
     return 0
 
 
-if __name__ == "__main__":
+def cli() -> None:
     raise SystemExit(main(sys.argv[1:]))
+
+
+if __name__ == "__main__":
+    cli()
