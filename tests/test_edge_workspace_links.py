@@ -385,3 +385,20 @@ def test_corrupt_gzip_payload_is_reported_as_parse_error(tmp_path: Path, capsys)
     assert "corrupt.edge: parse_error" in stderr
     assert "No workspace files were processed successfully." in stderr
     assert not (tmp_path / "report.xlsx").exists()
+
+
+def test_oversized_payload_is_reported_as_parse_error(tmp_path: Path, monkeypatch, capsys) -> None:
+    monkeypatch.setattr(mod, "MAX_PAYLOAD_BYTES", 64)
+    large_title = "X" * 256
+    write_edge_file(
+        tmp_path / "oversized.edge",
+        make_workspace_payload(tabs=[("https://example.com", large_title)]),
+    )
+
+    exit_code = mod.main(["--input", str(tmp_path), "--output", str(tmp_path / "report.xlsx")])
+
+    stderr = capsys.readouterr().err
+    assert exit_code == 1
+    assert "oversized.edge: parse_error" in stderr
+    assert "size guardrail" in stderr
+    assert not (tmp_path / "report.xlsx").exists()
