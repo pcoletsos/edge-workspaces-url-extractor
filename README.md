@@ -150,6 +150,15 @@ py -3 -m PyInstaller --onefile --name edge-workspace-links edge_workspace_links.
 
 The executable is written to `dist\edge-workspace-links.exe`.
 
+Benchmark extraction performance on a local workspace corpus:
+
+```bash
+python scripts/benchmark_extraction.py --input test-files --runs 5
+```
+
+Use any `.edge` file or directory in place of `test-files`. The benchmark focuses on
+the extraction path and skips workbook generation so parser changes remain measurable.
+
 ## Troubleshooting
 
 - If you get zero results, confirm the input path contains `.edge` files and

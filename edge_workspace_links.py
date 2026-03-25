@@ -25,6 +25,15 @@ GZIP_MAGIC = b"\x1f\x8b"
 INTERNAL_SCHEMES = {"about", "chrome", "edge", "file", "microsoft-edge"}
 FORMULA_PREFIXES = ("=", "+", "-", "@")
 SUCCESS_STATUSES = {"ok", "no_links"}
+CONTROL_CHAR_TRANSLATION = str.maketrans({chr(i): " " for i in range(32)})
+NESTED_JSON_HINTS = (
+    '"content"',
+    '"subdirectories"',
+    '"tabstripmodel"',
+    '"favorites"',
+    '"webcontents"',
+    '"navigationStack"',
+)
 
 
 @dataclass(frozen=True)
@@ -108,9 +117,16 @@ def iter_json_objects(text: str) -> Iterable[Any]:
     decoder = json.JSONDecoder()
     idx = 0
     while idx < len(text):
-        if text[idx] not in "{[":
-            idx += 1
-            continue
+        next_object = text.find("{", idx)
+        next_array = text.find("[", idx)
+        if next_object == -1:
+            idx = next_array
+        elif next_array == -1:
+            idx = next_object
+        else:
+            idx = min(next_object, next_array)
+        if idx == -1:
+            return
         try:
             obj, end = decoder.raw_decode(text, idx)
         except json.JSONDecodeError:
@@ -121,23 +137,28 @@ def iter_json_objects(text: str) -> Iterable[Any]:
 
 
 def iter_content_objects(obj: Any) -> Iterable[dict[str, Any]]:
-    if isinstance(obj, dict):
-        content = obj.get("content")
-        if isinstance(content, dict):
-            yield content
-        for value in obj.values():
-            yield from iter_content_objects(value)
-    elif isinstance(obj, list):
-        for item in obj:
-            yield from iter_content_objects(item)
-    elif isinstance(obj, str):
-        candidate = obj.strip()
-        if candidate.startswith("{") or candidate.startswith("["):
+    stack: list[Any] = [obj]
+    while stack:
+        current = stack.pop()
+        if isinstance(current, dict):
+            content = current.get("content")
+            if isinstance(content, dict):
+                yield content
+            values = list(current.values())
+            stack.extend(reversed(values))
+        elif isinstance(current, list):
+            stack.extend(reversed(current))
+        elif isinstance(current, str):
+            candidate = current.strip()
+            if not candidate.startswith(("{", "[")):
+                continue
+            if not any(hint in candidate for hint in NESTED_JSON_HINTS):
+                continue
             try:
                 nested = json.loads(candidate)
             except Exception:
-                return
-            yield from iter_content_objects(nested)
+                continue
+            stack.append(nested)
 
 
 def typed_value(value: Any) -> Any:
@@ -227,7 +248,7 @@ def extract_favorites_from_content(content: dict[str, Any]) -> list[LinkRecord]:
 
 
 def clean_json_text(text: str) -> str:
-    return "".join(ch if ord(ch) >= 0x20 else " " for ch in text)
+    return text.translate(CONTROL_CHAR_TRANSLATION)
 
 
 def extract_workspace_data(payloads: Iterable[bytes]) -> ExtractionDiagnostics:
