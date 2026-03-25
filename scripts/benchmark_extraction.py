@@ -130,9 +130,10 @@ def write_synthetic_corpus(
     return paths
 
 
-def benchmark_once(paths: list[Path], *, mode: str) -> tuple[float, int, int, dict[str, int]]:
+def benchmark_once(paths: list[Path], *, mode: str) -> tuple[float, int, int, int, dict[str, int]]:
     start = time.perf_counter()
     exported_links = 0
+    extracted_links = 0
     statuses: dict[str, int] = {}
     for path in paths:
         file_result, _ = app.process_edge_file(
@@ -142,18 +143,24 @@ def benchmark_once(paths: list[Path], *, mode: str) -> tuple[float, int, int, di
         )
         statuses[file_result.status] = statuses.get(file_result.status, 0) + 1
         exported_links += file_result.exported_link_count
+        extracted_links += (
+            file_result.extracted_tab_count + file_result.extracted_favorite_count
+        )
     elapsed = time.perf_counter() - start
-    return elapsed, len(paths), exported_links, statuses
+    return elapsed, len(paths), extracted_links, exported_links, statuses
 
 
 def benchmark_paths(paths: list[Path], *, runs: int, mode: str) -> dict[str, object]:
     timings: list[float] = []
     total_files = 0
+    extracted_links = 0
     exported_links = 0
     statuses: dict[str, int] = {}
 
     for _ in range(runs):
-        elapsed, total_files, exported_links, statuses = benchmark_once(paths, mode=mode)
+        elapsed, total_files, extracted_links, exported_links, statuses = benchmark_once(
+            paths, mode=mode
+        )
         timings.append(elapsed)
 
     return {
@@ -163,6 +170,7 @@ def benchmark_paths(paths: list[Path], *, runs: int, mode: str) -> dict[str, obj
         "best_seconds": round(min(timings), 4),
         "mean_seconds": round(statistics.mean(timings), 4),
         "median_seconds": round(statistics.median(timings), 4),
+        "extracted_links": extracted_links,
         "exported_links": exported_links,
         "statuses": statuses,
     }

@@ -97,12 +97,12 @@ def scan_gzip_payloads(data: bytes) -> PayloadScanResult:
         had_gzip_magic = True
         try:
             decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
-            out = decompressor.decompress(data[idx:])
-            if not decompressor.eof or not out:
-                failed_members += 1
-                continue
+            out = decompressor.decompress(data[idx:], MAX_PAYLOAD_BYTES + 1)
             if len(out) > MAX_PAYLOAD_BYTES:
                 oversized_members += 1
+                continue
+            if not decompressor.eof or not out:
+                failed_members += 1
                 continue
             digest = hashlib.sha256(out).digest()
             if digest in seen:
