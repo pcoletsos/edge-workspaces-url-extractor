@@ -16,6 +16,9 @@ dependencies = [
 dev = [
   "pytest>=8,<9",
 ]
+test = [
+  "pytest>=8,<9",
+]
 
 [tool.setuptools]
 py-modules = ["edge_workspace_links"]

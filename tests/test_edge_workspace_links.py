@@ -90,6 +90,113 @@ def workbook_metrics(sheet) -> dict[str, int]:
     }
 
 
+def test_scan_gzip_payloads_deduplicates_payloads_and_extracts_workspace_data() -> None:
+    first = make_workspace_payload(
+        tabs=[
+            ("https://example.com/a", "Alpha"),
+            ("edge://settings", "Internal"),
+            ("https://example.com/a", "Alpha duplicate"),
+        ],
+        favorites=[
+            ("https://example.com/a", "Alpha favorite"),
+            ("https://example.com/b", "Bravo"),
+        ],
+    )
+    second = make_workspace_payload(
+        tabs=[("https://example.com/c", "Charlie")],
+        favorites=[("https://example.com/d", "Delta")],
+    )
+
+    payload_scan = mod.scan_gzip_payloads(
+        make_edge_bytes(first, first, second, prefix=b"noise", suffix=b"tail")
+    )
+    diagnostics = mod.extract_workspace_data(payload_scan.payloads)
+
+    assert payload_scan.had_gzip_magic is True
+    assert len(payload_scan.payloads) == 2
+    assert [link.url for link in diagnostics.tabs] == [
+        "https://example.com/a",
+        "edge://settings",
+        "https://example.com/a",
+        "https://example.com/c",
+    ]
+    assert [link.title for link in diagnostics.favorites] == [
+        "Alpha favorite",
+        "Bravo",
+        "Delta",
+    ]
+
+
+def test_filter_links_excludes_explicit_schemes() -> None:
+    links = [
+        mod.LinkRecord(url="https://example.com", title="One"),
+        mod.LinkRecord(url="chrome://settings", title="Two"),
+        mod.LinkRecord(url="file:///tmp/test.txt", title="Three"),
+    ]
+
+    assert mod.filter_links(links, {"chrome", "file"}) == [
+        mod.LinkRecord(url="https://example.com", title="One")
+    ]
+
+
+def test_main_exports_tabs_and_favorites_with_expected_dedupe(tmp_path: Path) -> None:
+    write_edge_file(
+        tmp_path / "sample.edge",
+        make_workspace_payload(
+            tabs=[
+                ("https://example.com/shared", "Tab title"),
+                ("https://example.com/shared", "Tab title duplicate"),
+                ("https://example.com/tab-only", "Tab only"),
+            ],
+            favorites=[
+                ("https://example.com/shared", "Favorite title"),
+                ("https://example.com/favorite-only", "Favorite only"),
+            ],
+        ),
+    )
+    output_path = tmp_path / "out.xlsx"
+
+    exit_code = mod.main(["--input", str(tmp_path), "--output", str(output_path)])
+
+    assert exit_code == 0
+
+    workbook = load_workbook(output_path)
+    links_sheet = workbook["Links"]
+    summary = workbook_metrics(workbook["Summary Report"])
+    per_file_rows = list(workbook["Per File Report"].iter_rows(min_row=2, values_only=True))
+
+    assert [links_sheet.cell(row=2, column=index).value for index in range(1, 5)] == [
+        "sample.edge",
+        "favorite",
+        "https://example.com/shared",
+        "Favorite title",
+    ]
+    assert links_sheet["C2"].hyperlink.target == "https://example.com/shared"
+    assert [links_sheet.cell(row=3, column=index).value for index in range(1, 5)] == [
+        "sample.edge",
+        "favorite",
+        "https://example.com/favorite-only",
+        "Favorite only",
+    ]
+    assert [links_sheet.cell(row=4, column=index).value for index in range(1, 5)] == [
+        "sample.edge",
+        "tab",
+        "https://example.com/tab-only",
+        "Tab only",
+    ]
+
+    assert summary["workspace_files_processed"] == 1
+    assert summary["extracted_tabs_total"] == 3
+    assert summary["extracted_favorites_total"] == 2
+    assert summary["exported_links_total"] == 3
+    assert summary["unique_exported_urls"] == 3
+    assert per_file_rows[0][0] == "sample.edge"
+    assert per_file_rows[0][1] == "ok"
+    assert per_file_rows[0][3] == 3
+    assert per_file_rows[0][4] == 2
+    assert per_file_rows[0][5] == 3
+
+
 def test_write_output_escapes_formula_like_values_and_preserves_safe_hyperlinks(tmp_path: Path) -> None:
     output_path = tmp_path / "report.xlsx"
     rows = [
