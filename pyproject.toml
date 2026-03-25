@@ -12,6 +12,9 @@ dependencies = [
   "openpyxl>=3.1,<4",
 ]
 
+[project.scripts]
+edge-workspace-links = "edge_workspace_links_app.cli:cli"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8,<9",
@@ -21,7 +24,10 @@ test = [
 ]
 
 [tool.setuptools]
-py-modules = ["edge_workspace_links"]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

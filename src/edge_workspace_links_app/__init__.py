@@ -1,62 +1,54 @@
-#!/usr/bin/env python3
-"""
-Backward-compatible script entry point and API surface for the package layout.
-"""
-
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-
-SRC_PATH = Path(__file__).resolve().parent / "src"
-if str(SRC_PATH) not in sys.path:
-    sys.path.insert(0, str(SRC_PATH))
-
-from edge_workspace_links_app import (  # noqa: E402
-    CONTROL_CHAR_TRANSLATION,
-    FORMULA_PREFIXES,
-    GZIP_MAGIC,
-    INTERNAL_SCHEMES,
-    MAX_PAYLOAD_BYTES,
-    NESTED_JSON_HINTS,
-    SUCCESS_STATUSES,
-    ExportRow,
-    ExtractionDiagnostics,
-    FileResult,
-    LinkRecord,
-    PayloadScanResult,
-    build_export_rows,
-    build_summary_rows,
-    clean_json_text,
+from .cli import (
     cli,
     default_input_path,
-    extract_favorites_from_content,
-    extract_tabs_from_content,
-    extract_workspace_data,
-    filter_links,
     format_status_message,
-    has_workspace_markers,
-    iter_content_objects,
-    iter_edge_files,
-    iter_gzip_offsets,
-    iter_json_objects,
     main,
     parse_args,
-    process_edge_file,
     resolve_output_targets,
+    validate_output_targets,
+)
+from .exporters import (
+    FORMULA_PREFIXES,
     safe_excel_text,
     safe_hyperlink_target,
-    scan_gzip_payloads,
-    typed_value,
-    unique_by_url,
-    validate_output_targets,
     workbook_is_available,
     write_csv_output,
     write_json_output,
     write_output,
 )
-
+from .models import (
+    ExportRow,
+    ExtractionDiagnostics,
+    FileResult,
+    LinkRecord,
+    PayloadScanResult,
+)
+from .parser import (
+    CONTROL_CHAR_TRANSLATION,
+    GZIP_MAGIC,
+    MAX_PAYLOAD_BYTES,
+    NESTED_JSON_HINTS,
+    clean_json_text,
+    extract_favorites_from_content,
+    extract_tabs_from_content,
+    extract_workspace_data,
+    has_workspace_markers,
+    iter_content_objects,
+    iter_gzip_offsets,
+    iter_json_objects,
+    scan_gzip_payloads,
+    typed_value,
+)
+from .reporting import (
+    INTERNAL_SCHEMES,
+    SUCCESS_STATUSES,
+    build_export_rows,
+    build_summary_rows,
+    filter_links,
+    iter_edge_files,
+    process_edge_file,
+    unique_by_url,
+)
 
 __all__ = [
     "CONTROL_CHAR_TRANSLATION",
@@ -101,7 +93,3 @@ __all__ = [
     "write_json_output",
     "write_output",
 ]
-
-
-if __name__ == "__main__":
-    cli()

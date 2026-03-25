@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import csv
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -338,6 +339,85 @@ def test_mode_reports_extracted_and_exported_metrics_separately(tmp_path: Path) 
     assert per_file_rows[0][5] == 1
 
 
+def test_json_export_writes_stable_schema(tmp_path: Path) -> None:
+    write_edge_file(
+        tmp_path / "workspace.edge",
+        make_workspace_payload(
+            tabs=[("https://tab.example", "Tab title")],
+            favorites=[("https://favorite.example", "Favorite title")],
+        ),
+    )
+    output_path = tmp_path / "report.json"
+
+    exit_code = mod.main(
+        [
+            "--input",
+            str(tmp_path),
+            "--output",
+            str(output_path),
+            "--format",
+            "json",
+        ]
+    )
+
+    assert exit_code == 0
+
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert list(payload.keys()) == ["links", "summary", "files"]
+    assert payload["summary"]["exported_links_total"] == 2
+    assert payload["summary"]["workspace_files_processed"] == 1
+    assert payload["files"][0]["workspace_file"] == "workspace.edge"
+    assert {row["source"] for row in payload["links"]} == {"tab", "favorite"}
+
+
+def test_csv_export_writes_split_tables(tmp_path: Path) -> None:
+    write_edge_file(
+        tmp_path / "workspace.edge",
+        make_workspace_payload(
+            tabs=[("https://tab.example", "Tab title")],
+            favorites=[("https://favorite.example", "Favorite title")],
+        ),
+    )
+    output_base = tmp_path / "report"
+
+    exit_code = mod.main(
+        [
+            "--input",
+            str(tmp_path),
+            "--output",
+            str(output_base),
+            "--format",
+            "csv",
+        ]
+    )
+
+    assert exit_code == 0
+
+    links_path = tmp_path / "report_links.csv"
+    summary_path = tmp_path / "report_summary.csv"
+    files_path = tmp_path / "report_files.csv"
+
+    with links_path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.reader(handle))
+    with summary_path.open(newline="", encoding="utf-8") as handle:
+        summary_rows = list(csv.reader(handle))
+    with files_path.open(newline="", encoding="utf-8") as handle:
+        file_rows = list(csv.reader(handle))
+
+    assert rows[0] == ["workspace_file", "source", "url", "title"]
+    assert len(rows) == 3
+    assert summary_rows[0] == ["metric", "value"]
+    assert any(row[0] == "exported_links_total" and row[1] == "2" for row in summary_rows[1:])
+    assert file_rows[0] == [
+        "workspace_file",
+        "status",
+        "detail",
+        "extracted_tab_count",
+        "extracted_favorite_count",
+        "exported_link_count",
+    ]
+
+
 def test_mixed_directory_exports_valid_workspaces_and_reports_read_errors(
     tmp_path: Path, monkeypatch, capsys
 ) -> None:
@@ -388,7 +468,9 @@ def test_corrupt_gzip_payload_is_reported_as_parse_error(tmp_path: Path, capsys)
 
 
 def test_oversized_payload_is_reported_as_parse_error(tmp_path: Path, monkeypatch, capsys) -> None:
-    monkeypatch.setattr(mod, "MAX_PAYLOAD_BYTES", 64)
+    import edge_workspace_links_app.parser as parser_module
+
+    monkeypatch.setattr(parser_module, "MAX_PAYLOAD_BYTES", 64)
     large_title = "X" * 256
     write_edge_file(
         tmp_path / "oversized.edge",
