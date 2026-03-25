@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edge-workspaces-url-extractor"
+version = "0.0.0"
+description = "Extract Edge workspace URLs into spreadsheets."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8",
+]
+
+[tool.setuptools]
+py-modules = ["edge_workspace_links"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
