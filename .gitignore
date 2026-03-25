@@ -4,3 +4,4 @@ edge_workspace_links.xlsx
 test-files/
 build/
 dist/
+*.egg-info/
