@@ -1,19 +1,12 @@
-#!/usr/bin/env python3
 """
-Backward-compatible script entry point and API surface for the package layout.
+Installed compatibility wrapper that preserves the legacy ``edge_workspace_links`` import.
 """
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-
-SRC_PATH = Path(__file__).resolve().parent / "src"
-if str(SRC_PATH) not in sys.path:
-    sys.path.insert(0, str(SRC_PATH))
-
-from edge_workspace_links_app import (  # noqa: E402
+from edge_workspace_links_app import (
     CONTROL_CHAR_TRANSLATION,
     FORMULA_PREFIXES,
     GZIP_MAGIC,
@@ -145,7 +138,3 @@ __all__ = [
     "write_json_output",
     "write_output",
 ]
-
-
-if __name__ == "__main__":
-    cli()

@@ -23,3 +23,8 @@ jobs:
           python -m pip install .[dev]
       - name: Run tests
         run: python -m pytest
+      - name: Build wheel
+        run: python -m build --wheel
+      - name: Verify legacy wrapper in wheel
+        run: |
+          python -c "import pathlib, zipfile; whl = next(pathlib.Path('dist').glob('*.whl')); names = set(zipfile.ZipFile(whl).namelist()); assert any(name.endswith('edge_workspace_links.py') for name in names), names"

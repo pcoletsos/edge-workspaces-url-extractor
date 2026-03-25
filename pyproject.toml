@@ -17,14 +17,17 @@ edge-workspace-links = "edge_workspace_links_app.cli:cli"
 
 [project.optional-dependencies]
 dev = [
+  "build>=1,<2",
   "pytest>=8,<9",
 ]
 test = [
+  "build>=1,<2",
   "pytest>=8,<9",
 ]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+py-modules = ["edge_workspace_links"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
