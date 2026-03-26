@@ -17,5 +17,7 @@ void main() {
 
     expect(find.text('Edge Workspace Studio'), findsOneWidget);
     expect(find.text('Run analysis'), findsOneWidget);
+    expect(find.text('Choose folder'), findsOneWidget);
+    expect(find.text('Choose file'), findsOneWidget);
   });
 }
