@@ -21,17 +21,48 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install .[dev]
-      - name: Run tests
-        run: python -m pytest
+      - name: Run parser parity regression tests
+        run: python -m pytest tests/test_parity_cases.py -q
+      - name: Run CLI, reporting, and export regression tests
+        run: python -m pytest tests/test_edge_workspace_links.py tests/test_cli_quality_gates.py -q
+
+  wheel-smoke:
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .[dev]
       - name: Build wheel
         run: python -m build --wheel
-      - name: Verify legacy wrapper in wheel
+      - name: Verify legacy wrapper is packaged in the wheel
         run: |
           python -c "import pathlib, zipfile; whl = next(pathlib.Path('dist').glob('*.whl')); names = set(zipfile.ZipFile(whl).namelist()); assert any(name.endswith('edge_workspace_links.py') for name in names), names"
-      - name: Smoke test installed legacy wrapper
+      - name: Smoke test installed wheel CLI and wrapper
+        run: python scripts/check_wheel_install.py --wheel (Get-ChildItem dist\*.whl | Select-Object -First 1).FullName
+
+  pyinstaller-smoke:
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
         run: |
-          python -c "import pathlib, shutil, subprocess, sys; shutil.rmtree('wheel-smoke', ignore_errors=True); whl = next(pathlib.Path('dist').glob('*.whl')); subprocess.run([sys.executable, '-m', 'pip', 'install', '--force-reinstall', '--no-deps', '--target', 'wheel-smoke', str(whl)], check=True)"
-          python -I -c "import pathlib, sys; target = pathlib.Path('wheel-smoke').resolve(); sys.path.insert(0, str(target)); import edge_workspace_links as mod; assert pathlib.Path(mod.__file__).resolve().is_relative_to(target); rows = mod.build_export_rows('workspace.edge', [mod.LinkRecord(url='https://tab.example', title='Tab')], [mod.LinkRecord(url='https://favorite.example', title='Favorite')], 'both', set()); assert isinstance(rows[0], dict); summary = mod.build_summary_rows([mod.Path('.') / 'workspace.edge'], [mod.FileResult(workspace_file='workspace.edge', status='ok', extracted_tab_count=1, extracted_favorite_count=1, exported_link_count=2)], rows); assert ('unique_exported_urls', 2) in summary; assert mod.resolve_output_path(mod.Path('.'), 'report').name == 'report'"
+          python -m pip install --upgrade pip
+          python -m pip install .[dev] pyinstaller
+      - name: Build Windows executable
+        run: python -m PyInstaller --noconfirm edge-workspace-links.spec
+      - name: Smoke test packaged executable
+        run: python scripts/smoke_packaged_cli.py --exe dist\edge-workspace-links.exe
+
   rust-parity:
     runs-on: ubuntu-latest
     steps:
@@ -44,5 +75,5 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install .[dev]
-      - name: Run parity checks
+      - name: Run Rust parity checks
         run: python scripts/check_rust_parity.py

@@ -179,6 +179,36 @@ python scripts/benchmark_extraction.py --input test-files --runs 5
 Use any `.edge` file or directory in place of `test-files`. The benchmark focuses on
 the extraction path and skips workbook generation so parser changes remain measurable.
 
+## Quality gates
+
+Use these checks before merging parser, reporting, exporter, CLI, or packaging changes.
+
+Core regression suite:
+
+```bash
+python -m pytest tests/test_parity_cases.py -q
+python -m pytest tests/test_edge_workspace_links.py tests/test_cli_quality_gates.py -q
+```
+
+Wheel packaging smoke:
+
+```bash
+python -m build --wheel
+python scripts/check_wheel_install.py --wheel dist\edge_workspace_links-0.1.0-py3-none-any.whl
+```
+
+Replace the wheel path with the file you just built in `dist\`.
+
+Windows executable smoke:
+
+```bash
+py -3 -m PyInstaller edge-workspace-links.spec
+python scripts/smoke_packaged_cli.py --exe dist\edge-workspace-links.exe
+```
+
+The smoke checks exercise the documented CLI path end to end, including workbook creation,
+`--exclude-internal`, sorting, and the legacy wrapper/import surface used by older callers.
+
 ## Rust evaluation
 
 Milestone M4 evaluates a possible Rust rewrite without changing the shipped Python tool.
