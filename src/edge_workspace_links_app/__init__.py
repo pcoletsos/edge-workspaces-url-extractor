@@ -7,6 +7,8 @@ from .cli import (
     resolve_output_targets,
     validate_output_targets,
 )
+from .gui_backend import cli as gui_backend_cli
+from .gui_backend import main as gui_backend_main
 from .exporters import (
     FORMULA_PREFIXES,
     safe_excel_text,
@@ -73,6 +75,8 @@ __all__ = [
     "extract_workspace_data",
     "filter_links",
     "format_status_message",
+    "gui_backend_cli",
+    "gui_backend_main",
     "has_workspace_markers",
     "iter_content_objects",
     "iter_edge_files",
