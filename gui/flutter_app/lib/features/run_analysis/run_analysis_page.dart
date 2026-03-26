@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/analysis_response.dart';
 import '../../services/backend_runner.dart';
+import '../../services/path_picker.dart';
 
 class RunAnalysisPage extends StatefulWidget {
   const RunAnalysisPage({super.key});
@@ -13,12 +14,14 @@ class RunAnalysisPage extends StatefulWidget {
 class _RunAnalysisPageState extends State<RunAnalysisPage> {
   final _pathController = TextEditingController();
   final _backendRunner = const BackendRunner();
+  final _pathPicker = const PathPicker();
 
   AnalysisMode _mode = AnalysisMode.both;
   bool _excludeInternal = true;
   bool _sort = true;
   bool _isRunning = false;
   AnalysisResponse? _response;
+  String? _pickerError;
 
   @override
   void dispose() {
@@ -50,6 +53,39 @@ class _RunAnalysisPageState extends State<RunAnalysisPage> {
       _response = response;
       _isRunning = false;
     });
+  }
+
+  Future<void> _pickDirectory() async {
+    await _pickPath(() => _pathPicker.pickDirectory());
+  }
+
+  Future<void> _pickWorkspaceFile() async {
+    await _pickPath(() => _pathPicker.pickWorkspaceFile());
+  }
+
+  Future<void> _pickPath(Future<String?> Function() chooser) async {
+    try {
+      final selectedPath = await chooser();
+      if (!mounted || selectedPath == null || selectedPath.trim().isEmpty) {
+        return;
+      }
+
+      setState(() {
+        _pickerError = null;
+        _pathController.text = selectedPath;
+        _pathController.selection = TextSelection.collapsed(
+          offset: selectedPath.length,
+        );
+      });
+    } on PathPickerException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _pickerError = error.message;
+      });
+    }
   }
 
   @override
@@ -100,7 +136,7 @@ class _RunAnalysisPageState extends State<RunAnalysisPage> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Paste a workspace file or directory path. The prototype already calls the new JSON backend contract.',
+                                    'Choose a workspace folder or a single .edge file with native desktop dialogs. You can still edit the path directly.',
                                     style: theme.textTheme.bodyMedium,
                                   ),
                                   const SizedBox(height: 24),
@@ -113,11 +149,37 @@ class _RunAnalysisPageState extends State<RunAnalysisPage> {
                                           r'C:\Users\you\OneDrive\Apps\Microsoft Edge\Edge Workspaces',
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 14),
+                                  Wrap(
+                                    spacing: 12,
+                                    runSpacing: 12,
+                                    children: [
+                                      OutlinedButton.icon(
+                                        onPressed: _isRunning
+                                            ? null
+                                            : _pickDirectory,
+                                        icon: const Icon(Icons.folder_open),
+                                        label: const Text('Choose folder'),
+                                      ),
+                                      FilledButton.tonalIcon(
+                                        onPressed: _isRunning
+                                            ? null
+                                            : _pickWorkspaceFile,
+                                        icon: const Icon(
+                                          Icons.insert_drive_file_outlined,
+                                        ),
+                                        label: const Text('Choose file'),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
                                   Text(
-                                    'Native folder browsing is deferred until Windows Developer Mode is enabled for Flutter plugins on this machine.',
+                                    _pickerError ??
+                                        'Native browsing is available through the app shell on Windows, macOS, and Linux.',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: const Color(0xFF7B8794),
+                                      color: _pickerError == null
+                                          ? const Color(0xFF486581)
+                                          : const Color(0xFFC05621),
                                     ),
                                   ),
                                   const SizedBox(height: 24),
@@ -240,7 +302,7 @@ class _RunAnalysisPageState extends State<RunAnalysisPage> {
                                       ),
                                       const SizedBox(height: 12),
                                       Text(
-                                        'This first pass proves layout, theming, and backend invocation. The next pass should add a native folder picker and packaged backend binary.',
+                                        'This pass proves layout, backend invocation, and native desktop path selection. The next pass should switch the runner to a packaged backend binary.',
                                         style: theme.textTheme.bodyMedium,
                                       ),
                                     ],
@@ -678,7 +740,7 @@ class _EmptyState extends StatelessWidget {
           Text('Ready for the first run', style: theme.textTheme.titleLarge),
           const SizedBox(height: 10),
           Text(
-            'This prototype already knows how to call the backend and render the JSON response. Paste a path and run it to see the workflow.',
+            'This prototype already knows how to call the backend and render the JSON response. Choose a path or edit it manually, then run it to see the workflow.',
             style: theme.textTheme.bodyLarge,
           ),
         ],

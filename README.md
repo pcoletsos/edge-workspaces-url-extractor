@@ -209,6 +209,17 @@ python scripts/smoke_packaged_cli.py --exe dist\edge-workspace-links.exe
 The smoke checks exercise the documented CLI path end to end, including workbook creation,
 `--exclude-internal`, sorting, and the legacy wrapper/import surface used by older callers.
 
+Flutter desktop prototype:
+
+```bash
+cd gui/flutter_app
+flutter analyze
+flutter test
+flutter build windows
+```
+
+Run the platform-specific desktop build command from the matching host OS when validating macOS or Linux.
+
 ## Rust evaluation
 
 Milestone M4 evaluates a possible Rust rewrite without changing the shipped Python tool.

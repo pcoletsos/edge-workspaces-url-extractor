@@ -58,25 +58,22 @@ Current structure:
 
 The current prototype flow is:
 
-1. paste a workspace file or directory path
+1. choose a workspace file or directory with the native desktop picker, or edit the path manually
 2. choose mode and basic filters
 3. run extraction
 4. show per-file notices and summary metrics
 5. preview exported links
 
-## Current limitation
+## Current native path selection
 
-The Windows prototype intentionally uses manual path entry instead of a native folder picker.
+The desktop shell now exposes native path selection on Windows, macOS, and Linux without relying on Flutter picker plugins.
 
-Reason:
+Reasoning:
 
-- this machine can build Flutter desktop apps
-- this machine cannot currently create symlinks without elevated privileges or Windows Developer Mode
-- Flutter plugin-based native folder pickers depend on symlink support during local Windows development
-
-Because of that, the prototype favors a working backend-connected desktop shell over a blocked plugin integration.
+- the UI still needs first-class path navigation on every desktop OS
+- Flutter plugin-based pickers created avoidable setup friction on this Windows machine
+- a small platform-channel layer in each desktop runner avoids that tooling dependency while keeping native dialogs
 
 ## Next step
 
-Enable Windows Developer Mode, then add a native folder picker and switch the Flutter backend runner
-from source-module invocation to the packaged backend binary for release builds.
+Switch the Flutter backend runner from source-module invocation to the packaged backend binary for release builds.
