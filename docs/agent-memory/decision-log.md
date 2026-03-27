@@ -121,3 +121,27 @@ Reference:
 - `gui/flutter_app/windows/runner/flutter_window.cpp`
 - `gui/flutter_app/macos/Runner/MainFlutterWindow.swift`
 - `gui/flutter_app/linux/runner/my_application.cc`
+
+## ADM-007: Flutter Desktop Bundles Ship a Native GUI Backend Binary
+
+- Date: 2026-03-27
+- Status: accepted
+
+Decision:
+
+Flutter desktop builds for issue `#21` bundle a host-native `edge-workspace-links-gui-backend` executable next to the app runtime.
+The desktop runner should prefer that packaged backend on Windows, macOS, and Linux.
+The Python module path remains a development fallback only when the packaged backend is absent.
+GitHub Actions should verify the packaged backend and desktop bundle layout on native Windows, Linux, and macOS hosted runners.
+
+Rationale:
+
+- Release-style desktop bundles should not depend on a source checkout or an ambient Python environment
+- One packaged-backend contract keeps desktop runtime behavior aligned across Windows, macOS, and Linux
+- OS-native CI catches packaging regressions that cannot be validated honestly from a single host machine
+
+Reference:
+
+- `edge-workspace-links-gui-backend.spec`
+- `gui/flutter_app/lib/services/backend_runner.dart`
+- `.github/workflows/ci.yml`

@@ -307,7 +307,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "echo \"$PRODUCT_NAME.app\" > \"$PROJECT_DIR\"/Flutter/ephemeral/.app_filename && \"$FLUTTER_ROOT\"/packages/flutter_tools/bin/macos_assemble.sh embed\n";
+			shellScript = "set -e\nREPO_ROOT=\"$PROJECT_DIR/../../..\"\nBACKEND_SOURCE=\"$REPO_ROOT/dist/edge-workspace-links-gui-backend\"\nBACKEND_TARGET=\"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/MacOS/edge-workspace-links-gui-backend\"\necho \"$PRODUCT_NAME.app\" > \"$PROJECT_DIR\"/Flutter/ephemeral/.app_filename && \"$FLUTTER_ROOT\"/packages/flutter_tools/bin/macos_assemble.sh embed\nif [ ! -f \"$BACKEND_SOURCE\" ]; then\n  echo \"Missing prebuilt GUI backend at $BACKEND_SOURCE\" >&2\n  exit 1\nfi\ncp \"$BACKEND_SOURCE\" \"$BACKEND_TARGET\"\nchmod +x \"$BACKEND_TARGET\"\n";
 		};
 		33CC111E2044C6BF0003C045 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

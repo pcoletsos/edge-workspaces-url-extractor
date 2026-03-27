@@ -18,6 +18,24 @@ Recommended fields:
 
 ## 2026-03-27
 
+- Status: ready_for_pr
+- Issue: `#21`
+- Milestone: `M6`
+- Branch: `issue-21-flutter-eval`
+- Scope: finish packaged GUI backend integration for Flutter desktop builds across Windows, Linux, and macOS, and add OS-native GitHub Actions verification for those bundle paths
+- Files or areas touched: `.github/workflows/ci.yml`, `README.md`, `docs/flutter-ui-evaluation.md`, `docs/agent-memory/`, `edge-workspace-links-gui-backend.spec`, `scripts/smoke_gui_backend.py`, `tests/test_gui_backend_smoke.py`, `gui/flutter_app/lib/services/backend_runner.dart`, `gui/flutter_app/lib/features/run_analysis/run_analysis_page.dart`, `gui/flutter_app/windows/runner/CMakeLists.txt`, `gui/flutter_app/linux/CMakeLists.txt`, `gui/flutter_app/linux/runner/CMakeLists.txt`, `gui/flutter_app/macos/Runner.xcodeproj/project.pbxproj`
+- Next step: push the refreshed `issue-21-flutter-eval` branch, keep PR `#22` in draft until reviewers are satisfied with the desktop packaging scope, and use the new native CI jobs as the merge gate for Windows, Linux, and macOS bundle verification
+- PR or merge reference: PR `#22` draft
+
+- Status: ready_for_pr
+- Issue: `#21`
+- Milestone: `M6`
+- Branch: `issue-21-flutter-eval`
+- Scope: add the packaged GUI backend artifact and JSON smoke tooling for all desktop OS builds
+- Files or areas touched: `edge-workspace-links-gui-backend.spec`, `scripts/smoke_gui_backend.py`, `src/edge_workspace_links_app/gui_backend.py`, `tests/test_gui_backend_smoke.py`
+- Next step: wire this backend artifact into the Flutter desktop bundles and CI in a follow-up slice
+- PR or merge reference: PR `#22`
+
 - Status: issue_20_merged
 - Issue: `#20` and `#21`
 - Milestone: `M5` for `#20`, `M6` for `#21`

@@ -187,7 +187,7 @@ Core regression suite:
 
 ```bash
 python -m pytest tests/test_parity_cases.py -q
-python -m pytest tests/test_edge_workspace_links.py tests/test_cli_quality_gates.py -q
+python -m pytest tests/test_edge_workspace_links.py tests/test_cli_quality_gates.py tests/test_gui_backend.py tests/test_gui_backend_smoke.py -q
 ```
 
 Wheel packaging smoke:
@@ -209,7 +209,14 @@ python scripts/smoke_packaged_cli.py --exe dist\edge-workspace-links.exe
 The smoke checks exercise the documented CLI path end to end, including workbook creation,
 `--exclude-internal`, sorting, and the legacy wrapper/import surface used by older callers.
 
-Flutter desktop prototype:
+Packaged GUI backend smoke:
+
+```bash
+python -m PyInstaller --noconfirm edge-workspace-links-gui-backend.spec
+python scripts/smoke_gui_backend.py --backend-exe dist\edge-workspace-links-gui-backend.exe
+```
+
+Flutter desktop bundles:
 
 ```bash
 cd gui/flutter_app
@@ -218,7 +225,16 @@ flutter test
 flutter build windows
 ```
 
-Run the platform-specific desktop build command from the matching host OS when validating macOS or Linux.
+For Linux or macOS release-style validation, build the GUI backend on that host first:
+
+```bash
+python -m PyInstaller --noconfirm edge-workspace-links-gui-backend.spec
+cd gui/flutter_app
+flutter build linux   # Linux host
+flutter build macos   # macOS host
+```
+
+The desktop shell prefers the packaged sibling `edge-workspace-links-gui-backend` binary when it is bundled with the app and falls back to the Python module only during development. GitHub Actions verifies the Windows, Linux, and macOS desktop bundle paths on native hosted runners.
 
 ## Rust evaluation
 
