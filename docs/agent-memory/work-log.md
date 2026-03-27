@@ -18,14 +18,16 @@ Recommended fields:
 
 ## 2026-03-27
 
-- Status: in_review
+- Status: issue_20_merged
 - Issue: `#20` and `#21`
 - Milestone: `M5` for `#20`, `M6` for `#21`
 - Branch: `issue-20-release-grade-tests`, `issue-21-flutter-eval`
-- Scope: split the previously stacked review flow so `#20` can merge before `#21`; open a dedicated PR for the M5 quality-gate work and retarget the M6 draft PR to depend on it
-- Files or areas touched: GitHub branch and PR metadata only in this step; no implementation files changed
-- Next step: merge PR `#23` for `#20`, then reassess PR `#22` for `#21` against the remaining packaged-backend release gap noted in `docs/flutter-ui-evaluation.md`
-- PR or merge reference: PR `#23` opened for `#20`; PR `#22` retargeted to base `issue-20-release-grade-tests`
+- Scope: split the previously stacked review flow, fix the installed-wheel smoke coverage bug found during review, merge `#20`, and restore `#21` to a draft PR against `main`
+- Files or areas touched:
+  - `#20` branch: `scripts/smoke_packaged_cli.py`, `src/edge_workspace_links.py`
+  - `#21` branch: GitHub PR metadata and this work log entry
+- Next step: continue `#21` from PR `#22`, focusing on the remaining packaged-backend release gap noted in `docs/flutter-ui-evaluation.md`
+- PR or merge reference: PR `#23` merged into `main`; issue `#20` closed; PR `#22` retargeted back to `main`
 
 ## 2026-03-26
 
