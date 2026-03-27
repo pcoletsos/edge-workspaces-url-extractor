@@ -21,6 +21,15 @@ Recommended fields:
 - Status: in_progress
 - Issue: `#25`
 - Milestone: `M7`
+- Branch: `issue-25-release-publish-fix`
+- Scope: fix the first GitHub-hosted release run so the publish job creates the GitHub Release from a checked-out repository context after the build artifacts have already succeeded
+- Files or areas touched: `.github/workflows/release.yml`, `docs/agent-memory/work-log.md`
+- Next step: add the missing checkout step to `publish-release`, merge the fix, and rerun the `Release` workflow for `v0.3.1`
+- PR or merge reference: pending
+
+- Status: in_progress
+- Issue: `#25`
+- Milestone: `M7`
 - Branch: `issue-25-github-release-automation`
 - Scope: replace the local release packaging path with a GitHub-hosted release workflow that reruns quality gates, builds the Windows app assets in Actions, publishes GitHub Release assets, and increments release versions from prior tags
 - Files or areas touched: `.github/workflows/`, `scripts/`, `tests/`, `README.md`, `gui/flutter_app/README.md`, `docs/agent-memory/`
