@@ -180,3 +180,7 @@ __all__ = [
     "write_json_output",
     "write_output",
 ]
+
+
+if __name__ == "__main__":
+    cli()
