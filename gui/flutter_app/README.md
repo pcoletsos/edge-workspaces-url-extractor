@@ -38,5 +38,13 @@ flutter build linux
 flutter build macos
 ```
 
+From the repository root on Windows, turn the nested `build\windows\x64\runner\Release` output into a cleaner distributable folder and zip with:
+
+```bash
+python scripts/package_windows_ui_bundle.py
+```
+
+The packaged launcher path is `dist\edge-workspace-links-ui-windows\edge_workspace_links_ui.exe`.
+
 Use only the platform build command that matches the current host OS.
 GitHub Actions provides native Windows, Linux, and macOS verification for the packaged backend and bundle layout.
