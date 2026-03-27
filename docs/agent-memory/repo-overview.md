@@ -27,6 +27,7 @@ Processing is local-only. The main user-facing outputs are Excel, JSON, and CSV 
 - Python remains the shipped implementation.
 - Rust is retained as an evaluation prototype and research baseline, not the replacement implementation.
 - Flutter desktop builds use a packaged sibling GUI backend executable for release-style runs, with Python source-module fallback kept for local development only.
+- Official release assets are built and published from GitHub Actions, with release versions derived incrementally from existing release tags.
 - Work must be tracked through issues, milestones, branches, and pull requests.
 
 See `docs/agent-memory/decision-log.md` for the durable memo trail.

@@ -19,6 +19,24 @@ Recommended fields:
 ## 2026-03-27
 
 - Status: in_progress
+- Issue: `#25`
+- Milestone: `M7`
+- Branch: `issue-25-github-release-automation`
+- Scope: replace the local release packaging path with a GitHub-hosted release workflow that reruns quality gates, builds the Windows app assets in Actions, publishes GitHub Release assets, and increments release versions from prior tags
+- Files or areas touched: `.github/workflows/`, `scripts/`, `tests/`, `README.md`, `gui/flutter_app/README.md`, `docs/agent-memory/`
+- Next step: add reusable CI support, implement the release/versioning workflow and scripts, update release docs and durable memory, then validate the non-build script coverage locally
+- PR or merge reference: pending
+
+- Status: ready_for_pr
+- Issue: `#25`
+- Milestone: `M7`
+- Branch: `issue-25-github-release-automation`
+- Scope: made GitHub Actions the official release path by adding a manual release workflow, reusable CI quality gates, release version computation from prior tags, and docs for the GitHub-hosted asset publishing flow
+- Files or areas touched: `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `scripts/release_version.py`, `tests/test_release_version.py`, `pyproject.toml`, `README.md`, `gui/flutter_app/README.md`, `docs/agent-memory/`
+- Next step: push the branch, let PR checks validate the reusable CI path, merge into `main`, then trigger the `Release` workflow to publish the first GitHub-hosted versioned assets
+- PR or merge reference: pending
+
+- Status: in_progress
 - Issue: `#21`
 - Milestone: `M6`
 - Branch: `issue-21-ui-bundle`

@@ -9,23 +9,33 @@ scans for gzip members, decompresses them, parses the JSON, and extracts:
 - Open tabs (current URL + title per tab)
 - Workspace favorites/bookmarks
 
-## Quick start (Windows, no Python required)
+## Quick start (Windows desktop UI)
 
-Download the latest `edge-workspace-links.exe` from GitHub Releases:
-https://github.com/TsoliasPN/edge-workspaces-url-extractor/releases/latest
+Download the latest `edge-workspace-links-ui-windows-vX.Y.Z.zip` asset from GitHub Releases:
+https://github.com/pcoletsos/edge-workspaces-url-extractor/releases/latest
 
-1. Copy `edge-workspace-links.exe` into the folder with your `.edge` files.
-2. Double-click `edge-workspace-links.exe`.
+1. Extract the zip.
+2. Open `edge_workspace_links_ui.exe`.
+3. Choose the workspace file or folder you want to analyze.
+4. Run the analysis from the desktop UI.
+
+## Quick start (Windows CLI, no Python required)
+
+Download the latest `edge-workspace-links-vX.Y.Z.exe` asset from GitHub Releases:
+https://github.com/pcoletsos/edge-workspaces-url-extractor/releases/latest
+
+1. Copy `edge-workspace-links-vX.Y.Z.exe` into the folder with your `.edge` files.
+2. Double-click `edge-workspace-links-vX.Y.Z.exe`.
 3. The tool writes `edge_workspace_links.xlsx` in the same folder.
 
 > Double-click still works. The packaged executable keeps a console window so warnings and file statuses stay visible.
 
-The executable defaults to the folder it is in. Use `--input` to point to a
+The CLI executable defaults to the folder it is in. Use `--input` to point to a
 different file or folder.
 
 Executable defaults (when double-clicking):
 
-- Input: the folder containing `edge-workspace-links.exe`
+- Input: the folder containing `edge-workspace-links-vX.Y.Z.exe`
 - Output: `edge_workspace_links.xlsx` in the input folder
 - Mode: `both` (exports open tabs + favorites)
 - Filters: none (unless you pass `--exclude-internal` / `--exclude-schemes`)
@@ -35,66 +45,66 @@ Executable defaults (when double-clicking):
 Run against a directory containing `.edge` files:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces"
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces"
 ```
 
 Run against a single workspace file:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces\Advanced Reporting.edge"
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces\Advanced Reporting.edge"
 ```
 
 Write the Excel output to a custom path:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --output "C:\Temp\edge_workspace_links.xlsx"
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --output "C:\Temp\edge_workspace_links.xlsx"
 ```
 
 Write machine-readable JSON instead of Excel:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --format json --output "C:\Temp\edge_workspace_links.json"
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --format json --output "C:\Temp\edge_workspace_links.json"
 ```
 
 Write CSV tables for automation workflows:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --format csv --output "C:\Temp\edge_workspace_links"
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --format csv --output "C:\Temp\edge_workspace_links"
 ```
 
 Exclude internal browser schemes:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --exclude-internal
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --exclude-internal
 ```
 
 Export only open tabs:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --mode tabs
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --mode tabs
 ```
 
 Export only favorites/bookmarks:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --mode favorites
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --mode favorites
 ```
 
 Exclude specific schemes:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --exclude-schemes edge chrome file
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --exclude-schemes edge chrome file
 ```
 
 Sort output by workspace file and URL:
 
 ```bash
-edge-workspace-links.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --sort
+edge-workspace-links-vX.Y.Z.exe --input "C:\Users\YourUser\OneDrive\Apps\Microsoft Edge\Edge Workspaces" --sort
 ```
 
 Default input path:
 
-- Windows executable: the folder containing `edge-workspace-links.exe`.
+- Windows executable: the folder containing `edge-workspace-links-vX.Y.Z.exe`.
 - Python script: current working directory.
 
 Common options:
@@ -161,7 +171,7 @@ Workbook safety and reporting behavior:
   - If a URL exists on multiple tabs, it is written once.
 - Workspace share links are not stored as a simple URL in these files.
 
-## Build an executable (developers)
+## Local build paths (development only)
 
 ```bash
 py -3 -m PyInstaller edge-workspace-links.spec
@@ -169,6 +179,7 @@ py -3 -m PyInstaller edge-workspace-links.spec
 
 The executable is written to `dist\edge-workspace-links.exe`.
 The tracked spec keeps `console=True` so normal double-click runs still surface warnings and file statuses.
+Official GitHub releases do not rely on this local step.
 
 Benchmark extraction performance on a local workspace corpus:
 
@@ -194,10 +205,8 @@ Wheel packaging smoke:
 
 ```bash
 python -m build --wheel
-python scripts/check_wheel_install.py --wheel dist\edge_workspace_links-0.1.0-py3-none-any.whl
+python scripts/check_wheel_install.py --wheel (Get-ChildItem dist\*.whl | Select-Object -First 1).FullName
 ```
-
-Replace the wheel path with the file you just built in `dist\`.
 
 Windows executable smoke:
 
@@ -246,6 +255,31 @@ flutter build macos   # macOS host
 ```
 
 The desktop shell prefers the packaged sibling `edge-workspace-links-gui-backend` binary when it is bundled with the app and falls back to the Python module only during development. GitHub Actions verifies the Windows, Linux, and macOS desktop bundle paths on native hosted runners.
+
+## GitHub-hosted releases
+
+Official releases are built and published by GitHub Actions, not from a local workstation.
+
+Maintainer flow:
+
+1. Merge the release-ready changes into `main`.
+2. Open the `Release` workflow in GitHub Actions and run it on `main`.
+3. Choose the bump type: `patch`, `minor`, or `major`.
+4. Wait for the workflow to rerun the quality gates and publish the assets.
+
+The release workflow:
+
+- reruns the shared CI quality gates on GitHub-hosted runners
+- computes the next tag from the latest release tag
+- treats legacy tags such as `v0.3` as `0.3.0` for the next increment
+- builds the Windows CLI executable and Windows desktop UI bundle on GitHub-hosted Windows runners
+- publishes the release assets to GitHub Releases only if those checks succeed
+
+Release assets currently include:
+
+- `edge-workspace-links-vX.Y.Z.exe`
+- `edge-workspace-links-ui-windows-vX.Y.Z.zip`
+- `edge-workspace-links-vX.Y.Z-sha256.txt`
 
 ## Rust evaluation
 
