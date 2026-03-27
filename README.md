@@ -225,6 +225,17 @@ flutter test
 flutter build windows
 ```
 
+Package the Windows desktop UI into a cleaner distributable folder and zip from the repository root:
+
+```bash
+python scripts/package_windows_ui_bundle.py
+```
+
+That command writes:
+
+- `dist\edge-workspace-links-ui-windows\edge_workspace_links_ui.exe`
+- `dist\edge-workspace-links-ui-windows.zip`
+
 For Linux or macOS release-style validation, build the GUI backend on that host first:
 
 ```bash

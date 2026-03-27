@@ -18,6 +18,42 @@ Recommended fields:
 
 ## 2026-03-27
 
+- Status: in_progress
+- Issue: `#21`
+- Milestone: `M6`
+- Branch: `issue-21-ui-bundle`
+- Scope: turn the ad-hoc local Windows UI bundle packaging step into a reproducible tracked repo workflow with a helper script, docs, and regression coverage
+- Files or areas touched: `scripts/`, `tests/`, `README.md`, `gui/flutter_app/README.md`, `docs/agent-memory/work-log.md`
+- Next step: add the packaging helper and test, document the clean bundle output path, then validate and publish the branch
+- PR or merge reference: pending
+
+- Status: completed
+- Issue: `#21`
+- Milestone: `M6`
+- Branch: `issue-21-ui-bundle`
+- Scope: added a reproducible Windows UI bundle helper, documented the clean bundle output path, and validated the packaged backend plus launcher path
+- Files or areas touched: `scripts/package_windows_ui_bundle.py`, `tests/test_package_windows_ui_bundle.py`, `README.md`, `gui/flutter_app/README.md`, `docs/agent-memory/work-log.md`
+- Next step: commit and publish `issue-21-ui-bundle`, open a PR into `main`, merge it, then delete the branch
+- PR or merge reference: pending
+
+- Status: in_progress
+- Issue: `#21`
+- Milestone: `M6`
+- Branch: `issue-21-ui-bundle`
+- Scope: assemble a cleaner local Windows desktop UI bundle folder from the Flutter release output so the packaged UI can be launched without navigating the deep build tree
+- Files or areas touched: `dist/`, `docs/agent-memory/work-log.md`
+- Next step: copy the Windows Flutter release payload into a dedicated `dist` bundle folder, smoke-check the UI launcher, then record the finished artifact path
+- PR or merge reference: pending
+
+- Status: completed
+- Issue: `#21`
+- Milestone: `M6`
+- Branch: `issue-21-ui-bundle`
+- Scope: packaged the existing Windows Flutter release output into a cleaner local bundle folder and zip for direct use outside the nested build tree
+- Files or areas touched: `dist/edge-workspace-links-ui-windows/`, `dist/edge-workspace-links-ui-windows.zip`, `docs/agent-memory/work-log.md`
+- Next step: use `dist\edge-workspace-links-ui-windows\edge_workspace_links_ui.exe` as the desktop launcher or distribute the zip as the local Windows UI bundle
+- PR or merge reference: local artifact only; no PR opened
+
 - Status: ready_for_pr
 - Issue: `#21`
 - Milestone: `M6`
