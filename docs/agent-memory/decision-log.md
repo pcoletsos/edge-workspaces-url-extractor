@@ -145,3 +145,26 @@ Reference:
 - `edge-workspace-links-gui-backend.spec`
 - `gui/flutter_app/lib/services/backend_runner.dart`
 - `.github/workflows/ci.yml`
+
+## ADM-008: Official Releases Are Built and Published from GitHub Actions
+
+- Date: 2026-03-28
+- Status: accepted
+
+Decision:
+
+Official release assets must be built and published from GitHub-hosted Actions, not from a maintainer workstation.
+The release workflow reruns the required quality gates before publishing any GitHub Release assets.
+Release versions advance from the latest existing release tag with an explicit `patch`, `minor`, or `major` bump choice.
+Legacy tags without a patch component, such as `v0.3`, are treated as `.0` patch releases when computing the next version.
+
+Rationale:
+
+- Removes workstation-specific release drift
+- Ensures the published assets come from the same audited automation path as the quality gates
+- Makes release numbering predictable and repeatable
+
+Reference:
+
+- `.github/workflows/release.yml`
+- `scripts/release_version.py`

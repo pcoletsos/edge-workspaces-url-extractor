@@ -1,0 +1,169 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Increment type for the next release tag
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compute-version:
+    runs-on: ubuntu-latest
+    outputs:
+      latest_tag: ${{ steps.compute.outputs.latest_tag }}
+      version: ${{ steps.compute.outputs.version }}
+      tag: ${{ steps.compute.outputs.tag }}
+      cli_asset: ${{ steps.names.outputs.cli_asset }}
+      ui_zip_asset: ${{ steps.names.outputs.ui_zip_asset }}
+      checksums_asset: ${{ steps.names.outputs.checksums_asset }}
+    steps:
+      - name: Enforce main branch releases
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "Release workflow must be run from main, not ${GITHUB_REF}." >&2
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch tags
+        run: git fetch --force --tags
+      - id: compute
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          payload = json.loads(
+              subprocess.check_output(
+                  [
+                      "python",
+                      "scripts/release_version.py",
+                      "next",
+                      "--bump",
+                      "${{ inputs.bump }}",
+                  ],
+                  text=True,
+              )
+          )
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              for key, value in payload.items():
+                  handle.write(f"{key}={value}\n")
+          PY
+      - id: names
+        shell: bash
+        run: |
+          echo "cli_asset=edge-workspace-links-${{ steps.compute.outputs.tag }}.exe" >> "$GITHUB_OUTPUT"
+          echo "ui_zip_asset=edge-workspace-links-ui-windows-${{ steps.compute.outputs.tag }}.zip" >> "$GITHUB_OUTPUT"
+          echo "checksums_asset=edge-workspace-links-${{ steps.compute.outputs.tag }}-sha256.txt" >> "$GITHUB_OUTPUT"
+
+  quality-gates:
+    needs: compute-version
+    uses: ./.github/workflows/ci.yml
+
+  build-windows-release:
+    needs: [compute-version, quality-gates]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .[dev] pyinstaller
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Build packaged CLI executable
+        run: python -m PyInstaller --noconfirm edge-workspace-links.spec
+      - name: Smoke test packaged CLI executable
+        run: python scripts/smoke_packaged_cli.py --exe dist\edge-workspace-links.exe
+      - name: Rename CLI executable for release
+        run: Rename-Item dist\edge-workspace-links.exe "${{ needs.compute-version.outputs.cli_asset }}"
+      - name: Build packaged GUI backend
+        run: python -m PyInstaller --noconfirm edge-workspace-links-gui-backend.spec
+      - name: Smoke test packaged GUI backend artifact
+        run: python scripts/smoke_gui_backend.py --backend-exe dist\edge-workspace-links-gui-backend.exe
+      - name: Enable Flutter Windows desktop target
+        run: flutter config --enable-windows-desktop
+      - name: Fetch Flutter packages
+        run: flutter pub get
+        working-directory: gui/flutter_app
+      - name: Build Windows desktop UI bundle
+        run: flutter build windows --build-name "${{ needs.compute-version.outputs.version }}" --build-number "${{ github.run_number }}"
+        working-directory: gui/flutter_app
+      - name: Package Windows UI bundle for release
+        run: >
+          python scripts/package_windows_ui_bundle.py
+          --output-dir "dist\edge-workspace-links-ui-windows-${{ needs.compute-version.outputs.tag }}"
+          --zip-path "dist\${{ needs.compute-version.outputs.ui_zip_asset }}"
+      - name: Smoke test bundled backend in the packaged UI bundle
+        run: >
+          python scripts/smoke_gui_backend.py
+          --backend-exe "dist\edge-workspace-links-ui-windows-${{ needs.compute-version.outputs.tag }}\edge-workspace-links-gui-backend.exe"
+      - name: Write release checksums
+        shell: pwsh
+        run: |
+          $files = @(
+            "dist\${{ needs.compute-version.outputs.cli_asset }}",
+            "dist\${{ needs.compute-version.outputs.ui_zip_asset }}"
+          )
+          $hashFile = "dist\${{ needs.compute-version.outputs.checksums_asset }}"
+          if (Test-Path -LiteralPath $hashFile) {
+            Remove-Item -LiteralPath $hashFile -Force
+          }
+          foreach ($file in $files) {
+            $hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            $name = Split-Path -Leaf $file
+            Add-Content -LiteralPath $hashFile -Value "$hash  $name"
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            dist/${{ needs.compute-version.outputs.cli_asset }}
+            dist/${{ needs.compute-version.outputs.ui_zip_asset }}
+            dist/${{ needs.compute-version.outputs.checksums_asset }}
+          if-no-files-found: error
+
+  publish-release:
+    needs: [compute-version, build-windows-release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ needs.compute-version.outputs.tag }}"
+          release-assets/*
+          --target "${{ github.sha }}"
+          --title "${{ needs.compute-version.outputs.tag }}"
+          --generate-notes
+          --latest

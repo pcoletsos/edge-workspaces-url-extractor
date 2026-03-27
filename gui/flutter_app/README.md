@@ -48,3 +48,4 @@ The packaged launcher path is `dist\edge-workspace-links-ui-windows\edge_workspa
 
 Use only the platform build command that matches the current host OS.
 GitHub Actions provides native Windows, Linux, and macOS verification for the packaged backend and bundle layout.
+Official GitHub Releases are published from the repository `Release` workflow after those GitHub-hosted checks pass; maintainers do not need to build the release bundle locally.
