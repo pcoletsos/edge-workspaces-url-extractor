@@ -6,3 +6,6 @@ build/
 dist/
 *.egg-info/
 rust/**/target/
+wheel-smoke/
+gui/flutter_app/.dart_tool/
+gui/flutter_app/build/

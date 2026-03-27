@@ -23,8 +23,8 @@ jobs:
           python -m pip install .[dev]
       - name: Run parser parity regression tests
         run: python -m pytest tests/test_parity_cases.py -q
-      - name: Run CLI, reporting, and export regression tests
-        run: python -m pytest tests/test_edge_workspace_links.py tests/test_cli_quality_gates.py -q
+      - name: Run CLI, reporting, export, and GUI backend regression tests
+        run: python -m pytest tests/test_edge_workspace_links.py tests/test_cli_quality_gates.py tests/test_gui_backend.py tests/test_gui_backend_smoke.py -q
 
   wheel-smoke:
     runs-on: windows-latest
@@ -77,3 +77,71 @@ jobs:
           python -m pip install .[dev]
       - name: Run Rust parity checks
         run: python scripts/check_rust_parity.py
+
+  flutter-desktop:
+    name: flutter-desktop (${{ matrix.flutter-build }})
+    runs-on: ${{ matrix.os }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            python-version: "3.12"
+            flutter-build: windows
+            flutter-config: --enable-windows-desktop
+            backend-dist-path: dist\edge-workspace-links-gui-backend.exe
+            backend-path: gui\flutter_app\build\windows\x64\runner\Release\edge-workspace-links-gui-backend.exe
+          - os: ubuntu-latest
+            python-version: "3.12"
+            flutter-build: linux
+            flutter-config: --enable-linux-desktop
+            backend-dist-path: dist/edge-workspace-links-gui-backend
+            backend-path: gui/flutter_app/build/linux/x64/release/bundle/edge-workspace-links-gui-backend
+          - os: macos-latest
+            python-version: "3.12"
+            flutter-build: macos
+            flutter-config: --enable-macos-desktop
+            backend-dist-path: dist/edge-workspace-links-gui-backend
+            backend-path: gui/flutter_app/build/macos/Build/Products/Release/edge_workspace_links_ui.app/Contents/MacOS/edge-workspace-links-gui-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Linux desktop build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .[dev] pyinstaller
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Run Python regression suite used by the desktop backend
+        run: python -m pytest tests/test_gui_backend.py tests/test_gui_backend_smoke.py tests/test_cli_quality_gates.py tests/test_edge_workspace_links.py tests/test_parity_cases.py -q
+      - name: Build packaged GUI backend
+        run: python -m PyInstaller --noconfirm edge-workspace-links-gui-backend.spec
+      - name: Smoke test packaged GUI backend artifact
+        run: python scripts/smoke_gui_backend.py --backend-exe "${{ matrix.backend-dist-path }}"
+      - name: Enable Flutter desktop target
+        run: flutter config ${{ matrix.flutter-config }}
+      - name: Fetch Flutter packages
+        run: flutter pub get
+        working-directory: gui/flutter_app
+      - name: Analyze Flutter desktop app
+        run: flutter analyze
+        working-directory: gui/flutter_app
+      - name: Run Flutter widget tests
+        run: flutter test
+        working-directory: gui/flutter_app
+      - name: Build Flutter desktop bundle
+        run: flutter build ${{ matrix.flutter-build }}
+        working-directory: gui/flutter_app
+      - name: Verify bundled GUI backend exists
+        run: python -c "from pathlib import Path; path = Path(r'${{ matrix.backend-path }}'); assert path.exists(), f'Missing bundled GUI backend at {path}'"
+      - name: Smoke test bundled GUI backend
+        run: python scripts/smoke_gui_backend.py --backend-exe "${{ matrix.backend-path }}"
