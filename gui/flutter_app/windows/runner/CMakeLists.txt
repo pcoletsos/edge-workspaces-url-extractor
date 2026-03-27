@@ -43,13 +43,15 @@ set(GUI_BACKEND_TARGET "$<TARGET_FILE_DIR:${BINARY_NAME}>/edge-workspace-links-g
 
 # Copy the prebuilt GUI backend next to the Windows app executable so the
 # packaged runner can resolve it without a Python source checkout.
-add_custom_command(
-  TARGET ${BINARY_NAME}
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${GUI_BACKEND_SOURCE}" "${GUI_BACKEND_TARGET}"
-  WORKING_DIRECTORY "${REPO_ROOT}"
-  VERBATIM
-)
+if(EXISTS "${GUI_BACKEND_SOURCE}")
+  add_custom_command(
+    TARGET ${BINARY_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${GUI_BACKEND_SOURCE}" "${GUI_BACKEND_TARGET}"
+    WORKING_DIRECTORY "${REPO_ROOT}"
+    VERBATIM
+  )
+endif()
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)

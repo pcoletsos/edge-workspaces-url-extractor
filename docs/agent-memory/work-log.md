@@ -22,6 +22,15 @@ Recommended fields:
 - Issue: `#21`
 - Milestone: `M6`
 - Branch: `issue-21-flutter-eval`
+- Scope: address pre-merge review findings by restoring clean Flutter dev-build fallback when the packaged backend artifact is absent and correcting the preview badge tone for normal `tab` and `favorite` rows
+- Files or areas touched: `gui/flutter_app/windows/runner/CMakeLists.txt`, `gui/flutter_app/linux/CMakeLists.txt`, `gui/flutter_app/linux/runner/CMakeLists.txt`, `gui/flutter_app/macos/Runner.xcodeproj/project.pbxproj`, `gui/flutter_app/lib/features/run_analysis/run_analysis_page.dart`, `docs/agent-memory/work-log.md`
+- Next step: push the review-fix commit, let PR `#22` checks rerun, then merge if the PR stays clean
+- PR or merge reference: PR `#22`
+
+- Status: ready_for_pr
+- Issue: `#21`
+- Milestone: `M6`
+- Branch: `issue-21-flutter-eval`
 - Scope: finish packaged GUI backend integration for Flutter desktop builds across Windows, Linux, and macOS, and add OS-native GitHub Actions verification for those bundle paths
 - Files or areas touched: `.github/workflows/ci.yml`, `README.md`, `docs/flutter-ui-evaluation.md`, `docs/agent-memory/`, `edge-workspace-links-gui-backend.spec`, `scripts/smoke_gui_backend.py`, `tests/test_gui_backend_smoke.py`, `gui/flutter_app/lib/services/backend_runner.dart`, `gui/flutter_app/lib/features/run_analysis/run_analysis_page.dart`, `gui/flutter_app/windows/runner/CMakeLists.txt`, `gui/flutter_app/linux/CMakeLists.txt`, `gui/flutter_app/linux/runner/CMakeLists.txt`, `gui/flutter_app/macos/Runner.xcodeproj/project.pbxproj`
 - Next step: push the refreshed `issue-21-flutter-eval` branch, keep PR `#22` in draft until reviewers are satisfied with the desktop packaging scope, and use the new native CI jobs as the merge gate for Windows, Linux, and macOS bundle verification

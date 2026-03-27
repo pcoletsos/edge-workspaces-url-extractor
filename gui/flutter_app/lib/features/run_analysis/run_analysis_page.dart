@@ -641,6 +641,8 @@ class _StatusBadge extends StatelessWidget {
     final color = switch (status) {
       'ok' => const Color(0xFF0F766E),
       'no_links' => const Color(0xFFDD6B20),
+      'favorite' => const Color(0xFF0F766E),
+      'tab' => const Color(0xFF2F855A),
       _ => const Color(0xFFE07A5F),
     };
 

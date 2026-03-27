@@ -28,16 +28,19 @@ target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 set(REPO_ROOT "${CMAKE_SOURCE_DIR}/../../..")
 set(GUI_BACKEND_SOURCE "${REPO_ROOT}/dist/edge-workspace-links-gui-backend")
 set(GUI_BACKEND_TARGET "${PROJECT_BINARY_DIR}/edge-workspace-links-gui-backend")
+set(GUI_BACKEND_SOURCE "${GUI_BACKEND_SOURCE}" PARENT_SCOPE)
 set(GUI_BACKEND_TARGET "${GUI_BACKEND_TARGET}" PARENT_SCOPE)
 
 # Copy the prebuilt GUI backend into the bundle root so the desktop runner can
 # resolve a sibling executable at runtime without a Python source checkout.
 # The top-level install(PROGRAMS ...) step preserves executable permissions in
 # the final bundle, so this build-tree copy only needs the file contents.
-add_custom_command(
-  TARGET ${BINARY_NAME}
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${GUI_BACKEND_SOURCE}" "${GUI_BACKEND_TARGET}"
-  WORKING_DIRECTORY "${REPO_ROOT}"
-  VERBATIM
-)
+if(EXISTS "${GUI_BACKEND_SOURCE}")
+  add_custom_command(
+    TARGET ${BINARY_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${GUI_BACKEND_SOURCE}" "${GUI_BACKEND_TARGET}"
+    WORKING_DIRECTORY "${REPO_ROOT}"
+    VERBATIM
+  )
+endif()
