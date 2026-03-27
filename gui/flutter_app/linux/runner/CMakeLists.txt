@@ -32,11 +32,12 @@ set(GUI_BACKEND_TARGET "${GUI_BACKEND_TARGET}" PARENT_SCOPE)
 
 # Copy the prebuilt GUI backend into the bundle root so the desktop runner can
 # resolve a sibling executable at runtime without a Python source checkout.
+# The top-level install(PROGRAMS ...) step preserves executable permissions in
+# the final bundle, so this build-tree copy only needs the file contents.
 add_custom_command(
   TARGET ${BINARY_NAME}
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${GUI_BACKEND_SOURCE}" "${GUI_BACKEND_TARGET}"
-  COMMAND ${CMAKE_COMMAND} -E chmod +x "${GUI_BACKEND_TARGET}"
   WORKING_DIRECTORY "${REPO_ROOT}"
   VERBATIM
 )
