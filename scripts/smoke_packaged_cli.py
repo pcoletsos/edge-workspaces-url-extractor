@@ -152,7 +152,9 @@ def run_smoke(command: list[str], env: dict[str, str]) -> None:
                 "--exclude-internal",
                 "--sort",
             ],
-            cwd=Path(__file__).resolve().parents[1],
+            # Run outside the repository tree so `python -m edge_workspace_links`
+            # resolves from the installed target or environment, not local source files.
+            cwd=root,
             env=env,
             capture_output=True,
             text=True,
