@@ -26,6 +26,7 @@ Processing is local-only. The main user-facing outputs are Excel, JSON, and CSV 
 
 - Python remains the shipped implementation.
 - Rust is retained as an evaluation prototype and research baseline, not the replacement implementation.
+- Flutter desktop builds use a packaged sibling GUI backend executable for release-style runs, with Python source-module fallback kept for local development only.
 - Work must be tracked through issues, milestones, branches, and pull requests.
 
 See `docs/agent-memory/decision-log.md` for the durable memo trail.
@@ -38,7 +39,7 @@ Core regression suite:
 
 ```bash
 python -m pytest tests/test_parity_cases.py -q
-python -m pytest tests/test_edge_workspace_links.py tests/test_cli_quality_gates.py -q
+python -m pytest tests/test_edge_workspace_links.py tests/test_cli_quality_gates.py tests/test_gui_backend.py tests/test_gui_backend_smoke.py -q
 ```
 
 Packaging smoke:
@@ -48,6 +49,8 @@ python -m build --wheel
 python scripts/check_wheel_install.py --wheel <wheel-path>
 python -m PyInstaller --noconfirm edge-workspace-links.spec
 python scripts/smoke_packaged_cli.py --exe dist\edge-workspace-links.exe
+python -m PyInstaller --noconfirm edge-workspace-links-gui-backend.spec
+python scripts/smoke_gui_backend.py --backend-exe dist\edge-workspace-links-gui-backend.exe
 ```
 
 Flutter desktop shell:
@@ -58,6 +61,9 @@ flutter analyze
 flutter test
 flutter build windows
 ```
+
+Release-style Linux and macOS desktop validation must build the same GUI backend artifact on the matching host before running `flutter build linux` or `flutter build macos`.
+GitHub Actions now verifies the packaged GUI backend and desktop bundle path on native Windows, Linux, and macOS hosted runners.
 
 Rust parity:
 

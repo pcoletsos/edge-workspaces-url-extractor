@@ -24,3 +24,19 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
 
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
+
+set(REPO_ROOT "${CMAKE_SOURCE_DIR}/../../..")
+set(GUI_BACKEND_SOURCE "${REPO_ROOT}/dist/edge-workspace-links-gui-backend")
+set(GUI_BACKEND_TARGET "${PROJECT_BINARY_DIR}/edge-workspace-links-gui-backend")
+set(GUI_BACKEND_TARGET "${GUI_BACKEND_TARGET}" PARENT_SCOPE)
+
+# Copy the prebuilt GUI backend into the bundle root so the desktop runner can
+# resolve a sibling executable at runtime without a Python source checkout.
+add_custom_command(
+  TARGET ${BINARY_NAME}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${GUI_BACKEND_SOURCE}" "${GUI_BACKEND_TARGET}"
+  COMMAND ${CMAKE_COMMAND} -E chmod +x "${GUI_BACKEND_TARGET}"
+  WORKING_DIRECTORY "${REPO_ROOT}"
+  VERBATIM
+)

@@ -5,9 +5,9 @@ import json
 import sys
 from pathlib import Path
 
-from .cli import format_status_message
-from .models import ExportRow, FileResult
-from .reporting import (
+from edge_workspace_links_app.cli import format_status_message
+from edge_workspace_links_app.models import ExportRow, FileResult
+from edge_workspace_links_app.reporting import (
     INTERNAL_SCHEMES,
     SUCCESS_STATUSES,
     build_summary_rows,

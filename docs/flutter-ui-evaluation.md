@@ -74,6 +74,30 @@ Reasoning:
 - Flutter plugin-based pickers created avoidable setup friction on this Windows machine
 - a small platform-channel layer in each desktop runner avoids that tooling dependency while keeping native dialogs
 
-## Next step
+## Desktop packaging contract
 
-Switch the Flutter backend runner from source-module invocation to the packaged backend binary for release builds.
+The Flutter desktop shell now resolves a packaged sibling backend executable first on all three supported desktop targets:
+
+- Windows: `edge-workspace-links-gui-backend.exe`
+- Linux: `edge-workspace-links-gui-backend`
+- macOS: `edge_workspace_links_ui.app/Contents/MacOS/edge-workspace-links-gui-backend`
+
+The Python module path remains intentionally available only as a development fallback when the packaged backend is absent.
+That keeps local iteration simple while making release-style bundles self-contained.
+
+## Validation policy
+
+Local validation on this Windows host covers:
+
+- Python regression and GUI backend smoke checks
+- packaged GUI backend build and smoke on Windows
+- `flutter analyze`, `flutter test`, and `flutter build windows`
+
+OS-native verification for Linux and macOS is handled in GitHub Actions:
+
+- build the GUI backend with PyInstaller on the matching host
+- build the Flutter desktop bundle on the matching host
+- verify the bundled backend exists at the expected release path
+- smoke the bundled backend artifact directly from the built desktop output
+
+Manual validation is still required for interactive GUI behavior, native dialog UX, and release signing/notarization concerns.

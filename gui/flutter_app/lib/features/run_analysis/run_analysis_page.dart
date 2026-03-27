@@ -273,7 +273,7 @@ class _RunAnalysisPageState extends State<RunAnalysisPage> {
                                       ),
                                       const SizedBox(height: 12),
                                       Text(
-                                        'This prototype calls the Python backend directly and expects the JSON contract added on this branch.',
+                                        'This prototype prefers the packaged sibling backend executable when it is bundled with the app and falls back to the Python module during development.',
                                         style: theme.textTheme.bodyMedium,
                                       ),
                                       const SizedBox(height: 18),
@@ -302,7 +302,7 @@ class _RunAnalysisPageState extends State<RunAnalysisPage> {
                                       ),
                                       const SizedBox(height: 12),
                                       Text(
-                                        'This pass proves layout, backend invocation, and native desktop path selection. The next pass should switch the runner to a packaged backend binary.',
+                                        'This pass now covers layout, backend invocation, native desktop path selection, and packaged backend resolution across the desktop targets. Development still falls back to the Python module when the packaged backend is absent.',
                                         style: theme.textTheme.bodyMedium,
                                       ),
                                     ],
