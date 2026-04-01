@@ -1,0 +1,61 @@
+name: Implementation task
+description: Track a concrete branch-sized implementation slice.
+title: "chore: "
+labels:
+  - kind: task
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for scoped implementation work that should move
+        through the standard issue -> milestone -> branch -> PR flow.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Which repo area is the main target?
+      options:
+        - cli
+        - ui
+        - parser
+        - release
+        - docs
+        - shared
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the work slice.
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true when this task is complete?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List the concrete completion criteria.
+      placeholder: |
+        - ...
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: Name the tests, smoke checks, or manual verification you expect.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Branch hints, dependencies, or sequencing notes.

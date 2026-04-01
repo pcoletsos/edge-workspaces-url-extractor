@@ -1,0 +1,51 @@
+name: Maintainer override
+description: Track an exceptional admin, emergency, or policy-bypass request.
+title: "chore: "
+labels:
+  - kind: override
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template only for exceptional maintainer actions that do not
+        fit the normal issue -> milestone -> branch -> PR path.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Which repo area does the override touch?
+      options:
+        - cli
+        - ui
+        - parser
+        - release
+        - docs
+        - shared
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the override request.
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why the standard path does not fit
+      description: Explain why normal issue-first flow is insufficient here.
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risk
+      description: What could break or require follow-up?
+    validations:
+      required: true
+  - type: textarea
+    id: approval
+    attributes:
+      label: Approval or coordination
+      description: Note the approver or coordination path, if known.
