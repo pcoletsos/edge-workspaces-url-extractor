@@ -1,0 +1,27 @@
+name: Contribution guardrails
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  guardrails:
+    name: Contribution guardrails
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate branch, issue linkage, and PR title
+        run: python .github/scripts/validate_contribution_guardrails.py

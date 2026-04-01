@@ -3,6 +3,12 @@
 Extract open tab URLs and workspace favorites from Microsoft Edge Workspace `.edge` files.
 All processing happens locally.
 
+## Workflow
+
+GitHub is the live source of truth for issues, milestones, CI runs, releases,
+and branch protection. Read `CONTRIBUTING.md` before starting non-trivial work.
+If markdown snapshots drift from GitHub, GitHub wins.
+
 The `.edge` workspace files store compressed JSON deltas (gzip). This script
 scans for gzip members, decompresses them, parses the JSON, and extracts:
 

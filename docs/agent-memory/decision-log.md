@@ -168,3 +168,26 @@ Reference:
 
 - `.github/workflows/release.yml`
 - `scripts/release_version.py`
+
+## ADM-009: `CONTRIBUTING.md` Is the Canonical Workflow Contract
+
+- Date: 2026-04-01
+- Status: accepted
+
+Decision:
+
+`CONTRIBUTING.md` is the canonical repository workflow contract.
+Agent adapters (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and
+`.github/copilot-instructions.md`) point to it instead of restating the
+process.
+Canonical branch names use the `<actor>/<type>/<scope>/<task>-<id>` pattern,
+with repo scopes limited to `cli`, `ui`, `parser`, `release`, `docs`, and
+`shared`.
+`Backlog` remains the fallback milestone when no thematic milestone fits.
+Branch protection and required checks should mirror the live GitHub settings.
+
+Rationale:
+
+- Keeps the contribution operating system in one place
+- Makes branch, PR, and review expectations machine-checkable
+- Prevents the repo docs from drifting away from the live GitHub workflow

@@ -1,0 +1,58 @@
+name: Ops incident
+description: Track an operational issue, release failure, or urgent regression.
+title: "fix: "
+labels:
+  - kind: incident
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for urgent operational problems, failed releases, or
+        regressions that need immediate attention.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Which repo area is impacted?
+      options:
+        - cli
+        - ui
+        - parser
+        - release
+        - docs
+        - shared
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the incident.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Who or what is affected and how severe is it?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Logs, screenshots, links, or reproduction details.
+    validations:
+      required: true
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Mitigation
+      description: Immediate mitigation or rollback steps, if any.
+  - type: textarea
+    id: followup
+    attributes:
+      label: Follow-up
+      description: What durable fix should happen after stabilization?
+    validations:
+      required: true
