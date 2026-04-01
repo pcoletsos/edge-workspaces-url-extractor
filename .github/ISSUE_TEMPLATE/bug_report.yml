@@ -1,0 +1,68 @@
+name: Bug report
+description: Report a defect in the CLI, UI, parser, release flow, or docs.
+title: "bug: "
+labels:
+  - kind: bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for verified defects. Keep the report focused on the
+        observed behavior and include the scope that is affected.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Which repo area is affected?
+      options:
+        - cli
+        - ui
+        - parser
+        - release
+        - docs
+        - shared
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the defect.
+      placeholder: Importing or parsing fails for malformed workspace payloads
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Add the smallest reproducible path you have.
+      placeholder: |
+        1. Run ...
+        2. Open ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Logs, stack traces, screenshots, sample files, or links.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything else that would help triage or fix the bug.

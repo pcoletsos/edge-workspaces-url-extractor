@@ -16,6 +16,17 @@ Recommended fields:
 - Next step
 - PR or merge reference
 
+## 2026-04-01
+
+- Status: ready_for_pr
+- Issue: `#28`
+- Milestone: `Backlog`
+- Branch: `codex/chore/shared/contribution-os-28`
+- Scope: adopt the repository contribution operating system with canonical docs, agent adapters, GitHub issue templates, guardrails, and branch-protection friendly checks
+- Files or areas touched: `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/`, `README.md`, `docs/agent-memory/`
+- Next step: open a PR for `#28` when ready; the branch already has the contribution guardrails, labels, and `main` protection in place
+- PR or merge reference: pending
+
 ## 2026-03-27
 
 - Status: in_progress

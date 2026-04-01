@@ -1,0 +1,56 @@
+name: Maintenance
+description: Track cleanup, dependency refreshes, or repo admin work.
+title: "chore: "
+labels:
+  - kind: maintenance
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for routine maintenance work that still needs the
+        normal issue and milestone workflow.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Which repo area will this maintenance touch?
+      options:
+        - cli
+        - ui
+        - parser
+        - release
+        - docs
+        - shared
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the maintenance item.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now
+      description: Why is this maintenance needed?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What evidence shows the maintenance is complete?
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: List the checks that should run.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Links, constraints, or follow-up cleanup.

@@ -1,0 +1,56 @@
+name: Feature request
+description: Propose a new capability or user-facing improvement.
+title: "feat: "
+labels:
+  - kind: feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for new behavior or user-visible improvements that
+        need planning before implementation.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Which repo area does this request belong to?
+      options:
+        - cli
+        - ui
+        - parser
+        - release
+        - docs
+        - shared
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the requested capability.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user pain or workflow gap does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the desired end state.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Note any other approaches you have ruled out.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Links, mockups, examples, or implementation hints.
