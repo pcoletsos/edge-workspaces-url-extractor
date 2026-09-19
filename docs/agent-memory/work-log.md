@@ -16,6 +16,17 @@ Recommended fields:
 - Next step
 - PR or merge reference
 
+## 2026-09-19
+
+- Status: in_progress
+- Issue: `#33`
+- Milestone: `Backlog`
+- Branch: `local/docs/docs/ci-triage-guardrails-33`
+- Scope: add mandatory agent rules to `AGENTS.md` and `GEMINI.md` for CI failure triage via `gh run view <run_id> --log-failed` and pre-flight contribution guardrail validation
+- Files or areas touched: `AGENTS.md`, `GEMINI.md`, `docs/agent-memory/work-log.md`
+- Next step: commit the docs, push, and propose the PR (guardrail pre-flight and guardrail tests already pass locally)
+- PR or merge reference: pending
+
 ## 2026-04-01
 
 - Status: ready_for_pr

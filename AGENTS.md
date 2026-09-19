@@ -41,6 +41,47 @@ Do not implement non-trivial work directly on `main`.
 - Use the quality gates in `README.md` and `.github/workflows/ci.yml` for the
   area you touched.
 
+## Mandatory CI and Contribution Rules
+
+### CI failure triage
+
+When any CI check fails on a pull request:
+
+1. pull the failed step logs first with `gh run view <run_id> --log-failed`
+2. diagnose the root cause from those logs before changing anything
+3. fix, run the relevant local quality gates, and push the fix
+
+Do not guess at CI failures from check names or status icons alone.
+
+### Pre-flight contribution guardrails
+
+Before opening or updating a pull request, validate the contribution
+guardrails locally:
+
+1. branch name matches `<actor>/<type>/<scope>/<task>-<id>` using only the
+   allowed segment values from `CONTRIBUTING.md`
+2. PR title uses `<type>(<scope>): <description>` with the same `type` and
+   `scope` as the branch
+3. PR body links the branch issue with `Closes #<number>`
+
+Verify with the guardrail script against a synthetic PR event payload:
+
+```powershell
+python .github\scripts\validate_contribution_guardrails.py --event-path .\guardrails-event.json
+```
+
+```json
+{
+  "pull_request": {
+    "head": { "ref": "local/docs/docs/ci-triage-guardrails-33" },
+    "title": "docs(docs): add action failure triage and contribution guardrail rules",
+    "body": "Closes #33"
+  }
+}
+```
+
+Adjust the payload to the current branch, PR title, and body.
+
 ## Durable Memory
 
 Keep these files current when the workflow or repo posture changes:
